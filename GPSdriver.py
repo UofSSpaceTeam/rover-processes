@@ -80,20 +80,20 @@ async def every():
                     print("Rover piksi is connected", "DEBUG")
                     lats = []
                     longs = []
-                    for i in range(GPSProcess.NUM_SAMPLES):
+                    for i in range(NUM_SAMPLES):
                             # Take average of multiple samples.
                             # Actually doesn't perform that well...
-                            msg = piksi.poll(GPSProcess.MSG_POS_LLH)
+                            msg = piksi.poll(MSG_POS_LLH)
                             if msg is not None:
                                     lats.append(msg.lat)
                                     longs.append(msg.lon)
-                            GPSdevice.sleep(GPSProcess.SAMPLE_RATE)
+                            GPSdevice.sleep(SAMPLE_RATE)
                     if len(lats) > 1:
                             GPSdevice.publish('singlePointGPS',
                                             GPSPosition(radians(mean(lats)), radians(mean(longs))))
                     else:
                             print("Failed to take GPS averege", "WARNING")
-                    msg = piksi.poll(GPSProcess.MSG_VEL_NED)
+                    msg = piksi.poll(MSG_VEL_NED)
                     if msg is not None:
                             GPSdevice.publish("GPSVelocity", [msg.n/1000, msg.e/1000])
 
