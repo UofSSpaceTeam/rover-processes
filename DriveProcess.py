@@ -11,7 +11,6 @@
 # or implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-from .RoverProcess import RoverProcess
 from pyvesc import SetRPM, SetCurrent, SetCurrentBrake
 import pyvesc
 from math import expm1 # e**x - 1  for rpm/current curves
@@ -74,6 +73,164 @@ def austin_current_curve(f):
 	else:
 		return -a*MAX_CURRENT*100
 
+
+Drivedevice = Device('Drivedevice', 'demo-device')
+
+# Not sure how to port this to asyncio format
+'''
+def setup(self, args):
+        """ Initialize drive mode (default=rpm)."""
+        self.right_brake = False
+        self.left_brake = False
+        self.drive_mode = "rpm"
+        for key in ["joystick1", "joystick2","triggerL","triggerR", "on_DriveStop",
+                                "on_DriveForward", "on_DriveBackward",
+                                "on_DriveRotateRight", "on_DriveRotateLeft", "buttonA_down"]:
+                self.subscribe(key)
+'''
+
+@Drivedevice.on('joystick1')
+async def joystick1_callback(joystick1, data):
+        """ Handles the left wheels for manual control.
+                A joystick1 message contains:
+                [x axis (float -1:1), y axis (float -1:1)]
+        """
+        y_axis = data[1]
+        if y_axis is None:
+                return
+        if Drivedevice.drive_mode == "rpm":
+                print("rpm")
+                speed = austin_rpm_curve(y_axis)
+                if -DEADZONE < y_axis < DEADZONE: # DEADZONE
+                        speed = 0
+                Drivedevice.publish("wheelLF", SetRPM(int(speed)))
+                Drivedevice.publish("wheelLM", SetRPM(int(-1*speed)))
+                Drivedevice.publish("wheelLB", SetRPM(int(speed)))
+                Drivedevice.publish("updateLeftWheelRPM", speed)
+                print("left: {}".format(speed))
+        elif Drivedevice.drive_mode == "current" and not Drivedevice.left_brake:
+                current = austin_current_curve(y_axis)
+                Drivedevice.publish("wheelLF", SetCurrent(current))
+                Drivedevice.publish("wheelLM", SetCurrent(current))
+                Drivedevice.publish("wheelLB", SetCurrent(current))
+                print(current)
+
+@Drivedevice.on('joystick2')
+async def joystick2_callback(joystick2, data)
+        """ Handles the right wheels for manual control.
+                A joystick1 message contains:
+                [x axis (float -1:1), y axis (float -1:1)]
+        """
+        y_axis = data[1]
+        print(data)
+        if y_axis is None:
+                return
+        if Drivedevice.drive_mode == "rpm":
+                speed = austin_rpm_curve(y_axis)
+                if -DEADZONE < y_axis < DEADZONE: # DEADZONE
+                        speed = 0
+                Drivedevice.publish("wheelRF", SetRPM(int(speed)))
+                Drivedevice.publish("wheelRM", SetRPM(int(speed)))
+                Drivedevice.publish("wheelRB", SetRPM(int(-1*speed)))
+                Drivedevice.publish("updateRightWheelRPM", speed)
+                print("right: {}".format(speed))
+        elif Drivedevice.drive_mode == "current" and not Drivedevice.right_brake:
+                current = austin_current_curve(y_axis)
+                #if -MIN_CURRENT < current < MIN_CURRENT:
+                #	current = 0
+                Drivedevice.publish("wheelRF", SetCurrent(current))
+                Drivedevice.publish("wheelRM", SetCurrent(current))
+                Drivedevice.publish("wheelRB", SetCurrent(current))
+                print(current) # Changed from self.log(current)
+                #TODO: Add async logging system 
+        # Single drive mode not working due to missing axis on Windows
+        #if Drivedevice.drive_mode == "single":
+        #	speed = rpm_curve(y_axis)
+        #	if -DEADZONE < y_axis < DEADZONE: # DEADZONE
+        #		speed = 0
+        #	Drivedevice.publish("wheelRF", SetRPM(int( 1*(speed + self.mix))))
+        #	Drivedevice.publish("wheelRM", SetRPM(int( 1*(speed + self.mix))))
+        #	Drivedevice.publish("wheelRB", SetRPM(int(-1*(speed + self.mix))))
+        #	Drivedevice.publish("wheelLF", SetRPM(int( 1*(speed - self.mix))))
+        #	Drivedevice.publish("wheelLM", SetRPM(int(-1*(speed - self.mix))))
+        #	Drivedevice.publish("wheelLB", SetRPM(int( 1*(speed - self.mix))))
+        #	#self.log("right: {}".format(speed))
+
+@Drivedevice.on('Ltrigger')
+async def Ltrigger_callback(Ltrigger, trigger):
+        """ Handles left wheel braking (requires current mode)"""
+        if 0 < trigger <= 1 and Drivedevice.drive_mode == "current":
+                Drivedevice.left_brake = True
+                Drivedevice.publish("wheel1", SetCurrentBrake(max_current))
+                Drivedevice.publish("wheel2", SetCurrentBrake(max_current))
+                Drivedevice.publish("wheel3", SetCurrentBrake(max_current))
+        else:
+                Drivedevice.left_brake = False
+
+@Drivedevice.on('Rtrigger')
+async def Rtrigger_callback(Rtrigger, trigger):
+        """ Handles right wheel braking (requires current mode)"""
+        if 0 < trigger <= 1 and Drivedevice.drive_mode == "current":
+                Drivedevice.right_brake = True
+                Drivedevice.publish("wheel4", SetCurrentBrake(MAX_CURRENT))
+                Drivedevice.publish("wheel5", SetCurrentBrake(MAX_CURRENT))
+                Drivedevice.publish("wheel6", SetCurrentBrake(MAX_CURRENT))
+        else:
+                Drivedevice.right_brake = False
+
+@Drivedevice.on('ButtonA_down')
+async def ButtonA_down_callback(ButtonA_down, val):
+	Drivedevice.publish("autoDrive")
+
+@Drivedevice.on('ButtonB_down')
+async def ButtonB_down_callback(ButtonB_down, val):
+        Drivedevice.publish("manualDrive")
+
+# Not sure how to port these functions to asyncio format
+'''
+def _setLeftWheelSpeed(self, rpm):
+        rpm = SetRPM(int(rpm))
+        self.publish("wheelLF", rpm)
+        self.publish("wheelLM", rpm)
+        self.publish("wheelLB", rpm)
+
+def _setRightWheelSpeed(self, rpm):
+        rpm = SetRPM(int(rpm))
+        self.publish("wheelRF", rpm)
+        self.publish("wheelRM", rpm)
+        self.publish("wheelRB", rpm)
+'''
+
+@Drivedevice.on('DriveStop')
+async def DriveStop_callback(DriveStop, data):
+        Drivedevice._setLeftWheelSpeed(0)
+        Drivedevice._setRightWheelSpeed(0)
+
+@Drivedevice.on('DriveForward')
+async def DriveForward_callback(DriveForward, speed):
+        Drivedevice._setLeftWheelSpeed(speed*RPM_TO_ERPM)
+        Drivedevice._setRightWheelSpeed(speed*RPM_TO_ERPM)
+
+@Drivedevice.on('DriveBackward')
+async def DriveBackward_callback(DriveBackward, speed):
+        Drivedevice._setLeftWheelSpeed(-speed*RPM_TO_ERPM)
+        Drivedevice._setRightWheelSpeed(-speed*RPM_TO_ERPM)
+
+@Drivedevice.on('DriveRotateRight')
+async def DriveRotateRight_callback(DriveRotateRight, speed):
+        Drivedevice._setLeftWheelSpeed(speed*RPM_TO_ERPM)
+        Drivedevice._setRightWheelSpeed(-speed*RPM_TO_ERPM)
+
+@Drivedevice.on('DriveRotateLeft')
+async def DriveRotateLeft_callback(DriveRotateLeft, speed):
+        Drivedevice._setLeftWheelSpeed(-speed*RPM_TO_ERPM)
+        Drivedevice._setRightWheelSpeed(speed*RPM_TO_ERPM)
+
+
+
+
+## Old roveberryPi DriveProcess Code
+'''
 class DriveProcess(RoverProcess):
 	"""Handles driving the rover.
 
