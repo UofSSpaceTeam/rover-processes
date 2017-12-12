@@ -76,18 +76,10 @@ def austin_current_curve(f):
 
 Drivedevice = Device('Drivedevice', 'demo-device')
 
-# Not sure how to port this to asyncio format
-'''
-def setup(self, args):
-        """ Initialize drive mode (default=rpm)."""
-        self.right_brake = False
-        self.left_brake = False
-        self.drive_mode = "rpm"
-        for key in ["joystick1", "joystick2","triggerL","triggerR", "on_DriveStop",
-                                "on_DriveForward", "on_DriveBackward",
-                                "on_DriveRotateRight", "on_DriveRotateLeft", "buttonA_down"]:
-                self.subscribe(key)
-'''
+# Initialize setup variables
+Drivedevice.storage.right_brake = False
+Drivedevice.storage.left_brake = False
+Drivedevice.storage.drive_mode = "rpm"
 
 @Drivedevice.on('joystick1')
 async def joystick1_callback(joystick1, data):
@@ -98,22 +90,19 @@ async def joystick1_callback(joystick1, data):
         y_axis = data[1]
         if y_axis is None:
                 return
-        if Drivedevice.drive_mode == "rpm":
-                print("rpm")
+        if Drivedevice.storage.drive_mode == "rpm":
                 speed = austin_rpm_curve(y_axis)
                 if -DEADZONE < y_axis < DEADZONE: # DEADZONE
                         speed = 0
-                Drivedevice.publish("wheelLF", SetRPM(int(speed)))
-                Drivedevice.publish("wheelLM", SetRPM(int(-1*speed)))
-                Drivedevice.publish("wheelLB", SetRPM(int(speed)))
-                Drivedevice.publish("updateLeftWheelRPM", speed)
-                print("left: {}".format(speed))
-        elif Drivedevice.drive_mode == "current" and not Drivedevice.left_brake:
+                await.publish("wheelLF", SetRPM(int(speed)))
+                await.publish("wheelLM", SetRPM(int(-1*speed)))
+                await.publish("wheelLB", SetRPM(int(speed)))
+                await.publish("updateLeftWheelRPM", speed)
+        elif Drivedevice.storage.drive_mode == "current" and not Drivedevice.storage.left_brake:
                 current = austin_current_curve(y_axis)
-                Drivedevice.publish("wheelLF", SetCurrent(current))
-                Drivedevice.publish("wheelLM", SetCurrent(current))
-                Drivedevice.publish("wheelLB", SetCurrent(current))
-                print(current)
+                await.publish("wheelLF", SetCurrent(current))
+                await.publish("wheelLM", SetCurrent(current))
+                await.publish("wheelLB", SetCurrent(current))
 
 @Drivedevice.on('joystick2')
 async def joystick2_callback(joystick2, data)
@@ -122,27 +111,23 @@ async def joystick2_callback(joystick2, data)
                 [x axis (float -1:1), y axis (float -1:1)]
         """
         y_axis = data[1]
-        print(data)
         if y_axis is None:
                 return
-        if Drivedevice.drive_mode == "rpm":
+        if Drivedevice.storage.drive_mode == "rpm":
                 speed = austin_rpm_curve(y_axis)
                 if -DEADZONE < y_axis < DEADZONE: # DEADZONE
                         speed = 0
-                Drivedevice.publish("wheelRF", SetRPM(int(speed)))
-                Drivedevice.publish("wheelRM", SetRPM(int(speed)))
-                Drivedevice.publish("wheelRB", SetRPM(int(-1*speed)))
-                Drivedevice.publish("updateRightWheelRPM", speed)
-                print("right: {}".format(speed))
-        elif Drivedevice.drive_mode == "current" and not Drivedevice.right_brake:
+                await.publish("wheelRF", SetRPM(int(speed)))
+                await.publish("wheelRM", SetRPM(int(speed)))
+                await.publish("wheelRB", SetRPM(int(-1*speed)))
+                await.publish("updateRightWheelRPM", speed)
+        elif Drivedevice.storage.drive_mode == "current" and not Drivedevice.storage.right_brake:
                 current = austin_current_curve(y_axis)
                 #if -MIN_CURRENT < current < MIN_CURRENT:
                 #	current = 0
-                Drivedevice.publish("wheelRF", SetCurrent(current))
-                Drivedevice.publish("wheelRM", SetCurrent(current))
-                Drivedevice.publish("wheelRB", SetCurrent(current))
-                print(current) # Changed from self.log(current)
-                #TODO: Add async logging system 
+                await.publish("wheelRF", SetCurrent(current))
+                await.publish("wheelRM", SetCurrent(current))
+                await.publish("wheelRB", SetCurrent(current))
         # Single drive mode not working due to missing axis on Windows
         #if Drivedevice.drive_mode == "single":
         #	speed = rpm_curve(y_axis)
@@ -159,47 +144,44 @@ async def joystick2_callback(joystick2, data)
 @Drivedevice.on('Ltrigger')
 async def Ltrigger_callback(Ltrigger, trigger):
         """ Handles left wheel braking (requires current mode)"""
-        if 0 < trigger <= 1 and Drivedevice.drive_mode == "current":
-                Drivedevice.left_brake = True
-                Drivedevice.publish("wheel1", SetCurrentBrake(max_current))
-                Drivedevice.publish("wheel2", SetCurrentBrake(max_current))
-                Drivedevice.publish("wheel3", SetCurrentBrake(max_current))
+        if 0 < trigger <= 1 and Drivedevice.storage.drive_mode == "current":
+                Drivedevice.storage.left_brake = True
+                await.publish("wheel1", SetCurrentBrake(max_current))
+                await.publish("wheel2", SetCurrentBrake(max_current))
+                await.publish("wheel3", SetCurrentBrake(max_current))
         else:
-                Drivedevice.left_brake = False
+                Drivedevice.storage.left_brake = False
 
 @Drivedevice.on('Rtrigger')
 async def Rtrigger_callback(Rtrigger, trigger):
         """ Handles right wheel braking (requires current mode)"""
-        if 0 < trigger <= 1 and Drivedevice.drive_mode == "current":
-                Drivedevice.right_brake = True
-                Drivedevice.publish("wheel4", SetCurrentBrake(MAX_CURRENT))
-                Drivedevice.publish("wheel5", SetCurrentBrake(MAX_CURRENT))
-                Drivedevice.publish("wheel6", SetCurrentBrake(MAX_CURRENT))
+        if 0 < trigger <= 1 and Drivedevice.storage.drive_mode == "current":
+                Drivedevice.storage.right_brake = True
+                await.publish("wheel4", SetCurrentBrake(MAX_CURRENT))
+                await.publish("wheel5", SetCurrentBrake(MAX_CURRENT))
+                await.publish("wheel6", SetCurrentBrake(MAX_CURRENT))
         else:
-                Drivedevice.right_brake = False
+                Drivedevice.storage.right_brake = False
 
 @Drivedevice.on('ButtonA_down')
 async def ButtonA_down_callback(ButtonA_down, val):
-	Drivedevice.publish("autoDrive")
+	await.publish("autoDrive")
 
 @Drivedevice.on('ButtonB_down')
 async def ButtonB_down_callback(ButtonB_down, val):
-        Drivedevice.publish("manualDrive")
+        await.publish("manualDrive")
 
-# Not sure how to port these functions to asyncio format
-'''
-def _setLeftWheelSpeed(self, rpm):
+async def _setLeftWheelSpeed(self, rpm):
         rpm = SetRPM(int(rpm))
-        self.publish("wheelLF", rpm)
-        self.publish("wheelLM", rpm)
-        self.publish("wheelLB", rpm)
+        await.publish("wheelLF", rpm)
+        await.publish("wheelLM", rpm)
+        await.publish("wheelLB", rpm)
 
-def _setRightWheelSpeed(self, rpm):
+async def _setRightWheelSpeed(self, rpm):
         rpm = SetRPM(int(rpm))
-        self.publish("wheelRF", rpm)
-        self.publish("wheelRM", rpm)
-        self.publish("wheelRB", rpm)
-'''
+        await.publish("wheelRF", rpm)
+        await.publish("wheelRM", rpm)
+        await.publish("wheelRB", rpm)
 
 @Drivedevice.on('DriveStop')
 async def DriveStop_callback(DriveStop, data):
