@@ -87,14 +87,14 @@ async def every():
                             if msg is not None:
                                     lats.append(msg.lat)
                                     longs.append(msg.lon)
-                            GPSdevice.sleep(SAMPLE_RATE)
+                            await GPSdevice.sleep(SAMPLE_RATE)
                     if len(lats) > 1:
-                            await.publish('singlePointGPS',
+                            await GPSdevice.publish('singlePointGPS',
                                             GPSPosition(radians(mean(lats)), radians(mean(longs))))
                     else:
                             print("Failed to take GPS averege", "WARNING")
                     msg = piksi.poll(MSG_VEL_NED)
                     if msg is not None:
-                            await.publish("GPSVelocity", [msg.n/1000, msg.e/1000])
+                            await GPSdevice.publish("GPSVelocity", [msg.n/1000, msg.e/1000])
 
 GPSdevice.run()
