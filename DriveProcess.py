@@ -56,7 +56,7 @@ def current_curve(f):
 def austin_rpm_curve(f):
 
 	a = ((CURVE_VAL**abs(f)) - 1)/(CURVE_VAL - 1)
-	
+
 	if f > 0:
 		#print(a*40000)
 		return a*MAX_RPM
@@ -65,7 +65,7 @@ def austin_rpm_curve(f):
 		return -a*MAX_RPM
 
 def austin_current_curve(f):
-	
+
 	a = ((CURVE_VAL**abs(f)) - 1)/(CURVE_VAL - 1)
 	if f > 0:
 		return a*MAX_CURRENT*100
@@ -171,13 +171,13 @@ async def ButtonA_down_callback(ButtonA_down, val):
 async def ButtonB_down_callback(ButtonB_down, val):
         await Drivedevice.publish("manualDrive")
 
-async def _setLeftWheelSpeed(self, rpm):
+async def _setLeftWheelSpeed(rpm):
         rpm = SetRPM(int(rpm))
         await Drivedevice.publish("wheelLF", rpm)
         await Drivedevice.publish("wheelLM", rpm)
         await Drivedevice.publish("wheelLB", rpm)
 
-async def _setRightWheelSpeed(self, rpm):
+async def _setRightWheelSpeed(rpm):
         rpm = SetRPM(int(rpm))
         await Drivedevice.publish("wheelRF", rpm)
         await Drivedevice.publish("wheelRM", rpm)
@@ -211,7 +211,7 @@ async def DriveRotateLeft_callback(DriveRotateLeft, speed):
 
 
 
-## Old roveberryPi DriveProcess Code
+## Old roveberrypy DriveProcess Code
 '''
 class DriveProcess(RoverProcess):
 	"""Handles driving the rover.
@@ -353,12 +353,3 @@ class DriveProcess(RoverProcess):
 	def on_DriveRotateLeft(self, speed):
 		self._setLeftWheelSpeed(-speed*RPM_TO_ERPM)
 		self._setRightWheelSpeed(speed*RPM_TO_ERPM)
-
-
-
-
-
-
-
-
-
