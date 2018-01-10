@@ -10,7 +10,7 @@ import serial
 from math import *
 import math
 from statistics import mean
-
+from robocluster import device
 
 ## Global Variables
 LOOP_PERIOD = 0.3 # How often we pusblish positions
@@ -23,7 +23,6 @@ SAMPLE_RATE = 0.01 # seconds in between samples
 
 SERIAL = 'COMM1'
 BAUD = 115200
-
 
 class GPSPosition:
 	# Earth's radius in metres
@@ -43,8 +42,7 @@ class GPSPosition:
 		d_lat = them.lat - self.lat
 		d_lon = them.lon - self.lon
 
-		z = (hav(d_lat)
-				+ cos(self.lat) * cos(them.lat) * hav(d_lon))
+		z = (hav(d_lat) + cos(self.lat) * cos(them.lat) * hav(d_lon))
 
 		return GPSPosition.RADIUS * ahav(z)
 
@@ -55,10 +53,10 @@ class GPSPosition:
 
 		y = sin(d_lon) * cos(them.lat)
 		x = (cos(self.lat) * sin(them.lat)
-				- sin(self.lat) * cos(them.lat) * cos(d_lat))
+						- sin(self.lat) * cos(them.lat) * cos(d_lat))
 
 		return math.degrees(atan2(y, x))
-	
+
 	def gpsPosition(self, bearing, distance):
 		r_lat = math.radians(self.lat)
 		r_lon = math.radians(self.lon)
