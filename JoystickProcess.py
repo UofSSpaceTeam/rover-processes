@@ -1,10 +1,9 @@
 import time
 import os
 import pygame
-from threading import Thread, BoundedSemaphore
-from robocluster import device
+from robocluster import Device
 
-LOOP_PERIOD = 100
+LOOP_PERIOD = 0.1 # seconds
 
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.init()
@@ -17,10 +16,10 @@ JoystickDevice.storage.joystick1.init()
 
 @JoystickDevice.every(LOOP_PERIOD)
 async def every():
-	pygame.event.get()
-	left = [JoystickDevice.storage.joystick1.get_axis(0), JoystickDevice.joystick1.get_axis(1)]
-	right = [JoystickDevice.storage.joystick1.get_axis(3), JoystickDevice.joystick1.get_axis(4)]
-	await JoystickDevice.publish('joystick1', left)
-	await JoystickDevice.publish('joystick2', right)
+    pygame.event.get()
+    left = [JoystickDevice.storage.joystick1.get_axis(0), JoystickDevice.storage.joystick1.get_axis(1)]
+    right = [JoystickDevice.storage.joystick1.get_axis(3), JoystickDevice.storage.joystick1.get_axis(4)]
+    await JoystickDevice.publish('joystick1', left)
+    await JoystickDevice.publish('joystick2', right)
 
 JoystickDevice.run()
