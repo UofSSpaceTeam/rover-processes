@@ -18,7 +18,7 @@ MIN_CURRENT = 0.1
 CURVE_VAL = 17
 
 def rpm_curve(f):
-	if f > 0:
+    if f > 0:
 		rpm = (1/5)*MAX_RPM + (4/5)*MAX_RPM*((expm1(2*f))/(expm1(4)))
 	elif f < 0:
 		f = -1*f

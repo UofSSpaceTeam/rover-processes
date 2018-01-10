@@ -76,7 +76,7 @@ NavDevice.storage.lidar_scan_finish = False
 
 @NavDevice.every(NavDevice.storage.loop_delay)
 async def every():
-	if NavDevice.storage.state == "waiting":
+    if NavDevice.storage.state == "waiting":
 		NavDevice.wait_state()
 	elif NavDevice.storage.state == "driving":
 		NavDevice.drive_state()

@@ -26,7 +26,7 @@ BAUD = 115200
 
 class GPSPosition:
 	# Earth's radius in metres
-	RADIUS = 6371008.8
+    RADIUS = 6371008.8
 
 	def __init__(self, lat, lon, mode=0):
 		# lat an lon are assumed to be in radians
