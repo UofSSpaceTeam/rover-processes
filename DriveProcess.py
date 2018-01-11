@@ -18,48 +18,48 @@ MIN_CURRENT = 0.1
 CURVE_VAL = 17
 
 def rpm_curve(f):
-	if f > 0:
-		rpm = (1/5)*MAX_RPM + (4/5)*MAX_RPM*((expm1(2*f))/(expm1(4)))
-	elif f < 0:
-		f = -1*f
-		rpm = (1/5)*MAX_RPM + (4/5)*MAX_RPM*((expm1(2*f))/(expm1(4)))
-		rpm = -1*rpm
-	else:
-		rpm = 0
+    if f > 0:
+        rpm = (1/5)*MAX_RPM + (4/5)*MAX_RPM*((expm1(2*f))/(expm1(4)))
+    elif f < 0:
+        f = -1*f
+        rpm = (1/5)*MAX_RPM + (4/5)*MAX_RPM*((expm1(2*f))/(expm1(4)))
+        rpm = -1*rpm
+    else:
+        rpm = 0
 
-	#print(rpm)
-	return rpm
+    #print(rpm)
+    return rpm
 
 def current_curve(f):
-	if f > 0:
-		current = (1/5)*MAX_CURRENT + (4/5)*MAX_CURRENT*((expm1(2*f))/(expm1(4)))
-	elif f < 0:
-		f = -1*f
-		current = (1/5)*MAX_CURRENT + (4/5)*MAX_CURRENT*((expm1(2*f))/(expm1(4)))
-		current = -1*current
-	else:
-		current = 0
-	return current
+    if f > 0:
+        current = (1/5)*MAX_CURRENT + (4/5)*MAX_CURRENT*((expm1(2*f))/(expm1(4)))
+    elif f < 0:
+        f = -1*f
+        current = (1/5)*MAX_CURRENT + (4/5)*MAX_CURRENT*((expm1(2*f))/(expm1(4)))
+        current = -1*current
+    else:
+        current = 0
+    return current
 
 def austin_rpm_curve(f):
 
-	a = ((CURVE_VAL**abs(f)) - 1)/(CURVE_VAL - 1)
+    a = ((CURVE_VAL**abs(f)) - 1)/(CURVE_VAL - 1)
 
-	if f > 0:
-		#print(a*40000)
-		return a*MAX_RPM
-	else:
-		#print(-a*40000)
-		return -a*MAX_RPM
+    if f > 0:
+        #print(a*40000)
+        return a*MAX_RPM
+    else:
+        #print(-a*40000)
+        return -a*MAX_RPM
 
 def austin_current_curve(f):
 
-	a = ((CURVE_VAL**abs(f)) - 1)/(CURVE_VAL - 1)
-	if f > 0:
-		return a*MAX_CURRENT*100
+    a = ((CURVE_VAL**abs(f)) - 1)/(CURVE_VAL - 1)
+    if f > 0:
+        return a*MAX_CURRENT*100
 
-	else:
-		return -a*MAX_CURRENT*100
+    else:
+        return -a*MAX_CURRENT*100
 
 
 DriveDevice = Device('DriveDevice', 'demo-device')
@@ -112,22 +112,22 @@ async def joystick2_callback(joystick2, data)
         elif DriveDevice.storage.drive_mode == "current" and not DriveDevice.storage.right_brake:
                 current = austin_current_curve(y_axis)
                 #if -MIN_CURRENT < current < MIN_CURRENT:
-                #	current = 0
+                #   current = 0
                 await DriveDevice.publish("wheelRF", SetCurrent(current))
                 await DriveDevice.publish("wheelRM", SetCurrent(current))
                 await DriveDevice.publish("wheelRB", SetCurrent(current))
         # Single drive mode not working due to missing axis on Windows
         #if DriveDevice.drive_mode == "single":
-        #	speed = rpm_curve(y_axis)
-        #	if -DEADZONE < y_axis < DEADZONE: # DEADZONE
-        #		speed = 0
-        #	DriveDevice.publish("wheelRF", SetRPM(int( 1*(speed + self.mix))))
-        #	DriveDevice.publish("wheelRM", SetRPM(int( 1*(speed + self.mix))))
-        #	DriveDevice.publish("wheelRB", SetRPM(int(-1*(speed + self.mix))))
-        #	DriveDevice.publish("wheelLF", SetRPM(int( 1*(speed - self.mix))))
-        #	DriveDevice.publish("wheelLM", SetRPM(int(-1*(speed - self.mix))))
-        #	DriveDevice.publish("wheelLB", SetRPM(int( 1*(speed - self.mix))))
-        #	#self.log("right: {}".format(speed))
+        #   speed = rpm_curve(y_axis)
+        #   if -DEADZONE < y_axis < DEADZONE: # DEADZONE
+        #       speed = 0
+        #   DriveDevice.publish("wheelRF", SetRPM(int( 1*(speed + self.mix))))
+        #   DriveDevice.publish("wheelRM", SetRPM(int( 1*(speed + self.mix))))
+        #   DriveDevice.publish("wheelRB", SetRPM(int(-1*(speed + self.mix))))
+        #   DriveDevice.publish("wheelLF", SetRPM(int( 1*(speed - self.mix))))
+        #   DriveDevice.publish("wheelLM", SetRPM(int(-1*(speed - self.mix))))
+        #   DriveDevice.publish("wheelLB", SetRPM(int( 1*(speed - self.mix))))
+        #   #self.log("right: {}".format(speed))
 
 @DriveDevice.on('Ltrigger')
 async def Ltrigger_callback(Ltrigger, trigger):
@@ -153,7 +153,7 @@ async def Rtrigger_callback(Rtrigger, trigger):
 
 @DriveDevice.on('ButtonA_down')
 async def ButtonA_down_callback(ButtonA_down, val):
-	await DriveDevice.publish("autoDrive")
+    await DriveDevice.publish("autoDrive")
 
 @DriveDevice.on('ButtonB_down')
 async def ButtonB_down_callback(ButtonB_down, val):
