@@ -1,16 +1,11 @@
-from .libraries.GPS.Piksi import Piksi
-from .libraries.GPS.sbp.navigation import *
-from .libraries.GPS.sbp.system import *
-from .libraries.GPS.sbp.observation import *
-
-from threading import Thread
-import time
-import socket
-import serial
 from math import *
 import math
 from statistics import mean
-from robocluster import device
+import sys
+
+from robocluster import Device
+
+from libraries.GPS.Piksi import Piksi
 
 ## Global Variables
 LOOP_PERIOD = 0.3 # How often we pusblish positions
@@ -19,11 +14,13 @@ MSG_POS_LLH = 0x0201 # reports the absolute geodetic coordinate of the rover
 MSG_VEL_NED = 0x0205 # velocity in north, east, down coordinates
 
 NUM_SAMPLES = 10
-SAMPLE_RATE = 0.01 # seconds in between samples
+SAMPLE_RATE = LOOP_PERIOD/NUM_SAMPLES # seconds in between samples
 
-SERIAL = 'COMM1'
-BAUD = 115200
+SERIAL = '/dev/ttyUSB0'
+BAUD = 1000000
 
+# TODO: We can't send GPSPosition over the network with JSON,
+# we should move this somewhere else.
 class GPSPosition:
     # Earth's radius in metres
     RADIUS = 6371008.8
@@ -66,33 +63,38 @@ class GPSPosition:
         return GPSPosition(math.degrees(target_lat), math.degrees(target_lon))
 
 
-GPSdevice = Device('GPSdevice', 'demo-device')
+GPSdevice = Device('GPSdevice', 'rover')
 
 @GPSdevice.every(LOOP_PERIOD)
 async def every():
     with Piksi(SERIAL, BAUD) as piksi:
         connected = piksi.connected()
-            if not connected:
-                    print("Rover piksi is not connected properly", "ERROR")
+        if not connected:
+            print("Rover piksi is not connected properly")
+        else:
+            # print("Rover piksi is connected")
+            lats = []
+            longs = []
+            for i in range(NUM_SAMPLES):
+                # Take average of multiple samples.
+                # Actually doesn't perform that well...
+                msg = piksi.poll(MSG_POS_LLH)
+                if msg is not None:
+                    lats.append(msg.lat)
+                    longs.append(msg.lon)
+                await GPSdevice.sleep(SAMPLE_RATE)
+            if len(lats) > 1:
+                await GPSdevice.publish('singlePointGPS',
+                        {'lat': mean(lats), 'lon':mean(longs)})
             else:
-                    print("Rover piksi is connected", "DEBUG")
-                    lats = []
-                    longs = []
-                    for i in range(NUM_SAMPLES):
-                            # Take average of multiple samples.
-                            # Actually doesn't perform that well...
-                            msg = piksi.poll(MSG_POS_LLH)
-                            if msg is not None:
-                                    lats.append(msg.lat)
-                                    longs.append(msg.lon)
-                            await GPSdevice.sleep(SAMPLE_RATE)
-                    if len(lats) > 1:
-                            await GPSdevice.publish('singlePointGPS',
-                                            GPSPosition(radians(mean(lats)), radians(mean(longs))))
-                    else:
-                            print("Failed to take GPS averege", "WARNING")
-                    msg = piksi.poll(MSG_VEL_NED)
-                    if msg is not None:
-                            await GPSdevice.publish("GPSVelocity", [msg.n/1000, msg.e/1000])
+                print("Failed to take GPS averege", "WARNING")
+            msg = piksi.poll(MSG_VEL_NED)
+            if msg is not None:
+                await GPSdevice.publish("GPSVelocity", [msg.n/1000, msg.e/1000])
 
+if len(sys.argv) == 2:
+    SERIAL = sys.argv[2]
+else:
+    print('Usage: GPSdriver.py <path-to-piksi>')
+    print('Using default /dev/ttyUSB0')
 GPSdevice.run()
