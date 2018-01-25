@@ -1,2 +1,4 @@
 pyserial
 construct==2.5.1
+utm
+numpy

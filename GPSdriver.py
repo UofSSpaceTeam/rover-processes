@@ -1,4 +1,5 @@
 from math import *
+import random
 import math
 from statistics import mean
 import sys
@@ -65,7 +66,11 @@ class GPSPosition:
 
 GPSdevice = Device('GPSdevice', 'rover')
 
-@GPSdevice.every(LOOP_PERIOD)
+@GPSdevice.every('1s')
+async def dummy():
+    await GPSdevice.publish('singlePointGPS', [51.0342432+(random.random()), 110.432342432+(random.random())])
+
+# @GPSdevice.every(LOOP_PERIOD)
 async def every():
     with Piksi(SERIAL, BAUD) as piksi:
         connected = piksi.connected()
