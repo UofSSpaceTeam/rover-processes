@@ -1,8 +1,16 @@
 import numpy as np
 import utm as utm
 from robocluster import Device
+import random
 
 KalmanFilter = Device('KalmanFilter', 'rover')
+
+DummyGPS = Device('DummyGPS', 'rover')
+
+@DummyGPS.every('1s')
+async def dummy():
+    await DummyGPS.publish('singlePointGPS', [51.0342432+(random.random()), 110.432342432+(random.random())])
+
 
 
 @KalmanFilter.task
@@ -158,4 +166,11 @@ async def kalman_filter(event, data):
 
 
 
-KalmanFilter.run()
+try:
+    KalmanFilter.start()
+    DummyGPS.start()
+    KalmanFilter.wait()
+    DummyGPS.wait()
+except KeyboardInterrupt:
+    KalmanFilter.stop()
+    DummyGPS.stop()
