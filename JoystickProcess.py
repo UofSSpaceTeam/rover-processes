@@ -22,4 +22,18 @@ async def every():
     await JoystickDevice.publish('joystick1', left)
     await JoystickDevice.publish('joystick2', right)
 
-JoystickDevice.run()
+printer = Device('printer', 'demo_device')
+
+@printer.on('*/joystick[1,2]')
+async def callback(event, data):
+    print(event, data)
+
+
+try:
+    JoystickDevice.start()
+    printer.start()
+    JoystickDevice.wait()
+    printer.wait()
+except KeyboardInterrupt:
+    JoystickDevice.stop()
+    printer.stop()
