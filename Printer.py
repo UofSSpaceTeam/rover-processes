@@ -11,4 +11,7 @@ def print_it(event, data):
     print(event, data)
 
 
-printer.run()
+try:
+    printer.run()
+except KeyboardInterrupt:
+    pass
