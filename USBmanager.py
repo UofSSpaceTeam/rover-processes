@@ -10,6 +10,8 @@ PortList = serial.tools.list_ports.comports()
 
 ports = {}
 for port in PortList:
+    if port.device == '/dev/ttyS0':
+        continue
     print(port.device)
     ports[port.device] = SerialDriver(port.device,'rover')
     ports[port.device].start()
