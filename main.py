@@ -2,9 +2,12 @@ from procman.ProcessManager import ProcessManager, RunOnce
 
 
 process_list = [
-    RunOnce('USBManager', 'python USBmanager.py'),
+    # RunOnce('USBManager', 'python USBmanager.py'),
     RunOnce('Printer', 'python Printer.py'),
-    RunOnce('GPSDriver', 'python GPSdriver.py'),
+    # RunOnce('GPSDriver', 'python GPSdriver.py'),
+    RunOnce('DriveControl', 'python DriveProcess.py'),
+    RunOnce('Joystick', 'python JoystickProcess.py'),
+
 ]
 
 

@@ -2,7 +2,7 @@ from pyvesc import SetRPM, SetCurrent, SetCurrentBrake
 import pyvesc
 from math import expm1 # e**x - 1  for rpm/current curves
 from math import exp
-from robocluster import device
+from robocluster import Device
 
 RPM_TO_ERPM = 12*19 # 12 poles, 19:1 gearbox
 
@@ -11,8 +11,8 @@ RPM_TO_ERPM = 12*19 # 12 poles, 19:1 gearbox
 # speed at which the motor is commutated.
 
 DEADZONE = 0.1
-MAX_RPM = 40000
-MIN_RPM = 300
+MAX_RPM = 1
+MIN_RPM = 0.1
 MAX_CURRENT = 6
 MIN_CURRENT = 0.1
 CURVE_VAL = 17
@@ -62,14 +62,14 @@ def austin_current_curve(f):
         return -a*MAX_CURRENT*100
 
 
-DriveDevice = Device('DriveDevice', 'demo-device')
+DriveDevice = Device('DriveDevice', 'rover')
 
 # Initialize setup variables
 DriveDevice.storage.right_brake = False
 DriveDevice.storage.left_brake = False
 DriveDevice.storage.drive_mode = "rpm" # "rpm" or "current"
 
-@DriveDevice.on('joystick1')
+@DriveDevice.on('*/joystick1')
 async def joystick1_callback(joystick1, data):
         """ Handles the left wheels for manual control.
                 A joystick1 message contains:
@@ -82,18 +82,17 @@ async def joystick1_callback(joystick1, data):
                 speed = austin_rpm_curve(y_axis)
                 if -DEADZONE < y_axis < DEADZONE: # DEADZONE
                         speed = 0
-                await DriveDevice.publish("wheelLF", SetRPM(int(speed)))
-                await DriveDevice.publish("wheelLM", SetRPM(int(-1*speed)))
-                await DriveDevice.publish("wheelLB", SetRPM(int(speed)))
-                await DriveDevice.publish("updateLeftWheelRPM", speed)
+                await DriveDevice.publish("wheelLF", speed)
+                await DriveDevice.publish("wheelLM", speed)
+                await DriveDevice.publish("wheelLB", speed)
         elif DriveDevice.storage.drive_mode == "current" and not DriveDevice.storage.left_brake:
                 current = austin_current_curve(y_axis)
                 await DriveDevice.publish("wheelLF", SetCurrent(current))
                 await DriveDevice.publish("wheelLM", SetCurrent(current))
                 await DriveDevice.publish("wheelLB", SetCurrent(current))
 
-@DriveDevice.on('joystick2')
-async def joystick2_callback(joystick2, data)
+@DriveDevice.on('*/joystick2')
+async def joystick2_callback(joystick2, data):
         """ Handles the right wheels for manual control.
                 A joystick1 message contains:
                 [x axis (float -1:1), y axis (float -1:1)]
@@ -105,10 +104,9 @@ async def joystick2_callback(joystick2, data)
                 speed = austin_rpm_curve(y_axis)
                 if -DEADZONE < y_axis < DEADZONE: # DEADZONE
                         speed = 0
-                await DriveDevice.publish("wheelRF", SetRPM(int(speed)))
-                await DriveDevice.publish("wheelRM", SetRPM(int(speed)))
-                await DriveDevice.publish("wheelRB", SetRPM(int(-1*speed)))
-                await DriveDevice.publish("updateRightWheelRPM", speed)
+                await DriveDevice.publish("wheelRF", speed)
+                await DriveDevice.publish("wheelRM", speed)
+                await DriveDevice.publish("wheelRB", speed)
         elif DriveDevice.storage.drive_mode == "current" and not DriveDevice.storage.right_brake:
                 current = austin_current_curve(y_axis)
                 #if -MIN_CURRENT < current < MIN_CURRENT:
@@ -195,3 +193,5 @@ def DriveRotateRight_callback(DriveRotateRight, speed):
 def DriveRotateLeft_callback(DriveRotateLeft, speed):
         DriveDevice._setLeftWheelSpeed(-speed*RPM_TO_ERPM)
         DriveDevice._setRightWheelSpeed(speed*RPM_TO_ERPM)
+
+DriveDevice.run()

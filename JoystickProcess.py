@@ -15,7 +15,7 @@ JoystickDevice.storage.joystick1 = pygame.joystick.Joystick(0)
 JoystickDevice.storage.joystick1.init()
 
 @JoystickDevice.every(LOOP_PERIOD)
-async def every():
+async def read_joystick():
     pygame.event.get()
     left = [JoystickDevice.storage.joystick1.get_axis(0), JoystickDevice.storage.joystick1.get_axis(1)]
     right = [JoystickDevice.storage.joystick1.get_axis(3), JoystickDevice.storage.joystick1.get_axis(4)]
@@ -31,9 +31,9 @@ async def callback(event, data):
 
 try:
     JoystickDevice.start()
-    printer.start()
+    # printer.start()
     JoystickDevice.wait()
-    printer.wait()
+    # printer.wait()
 except KeyboardInterrupt:
     JoystickDevice.stop()
-    printer.stop()
+    # printer.stop()

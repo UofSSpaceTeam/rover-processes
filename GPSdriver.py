@@ -68,7 +68,8 @@ GPSdevice = Device('GPSdevice', 'rover')
 
 @GPSdevice.every('1s')
 async def dummy():
-    await GPSdevice.publish('singlePointGPS', [51.0342432+(random.random()), 110.432342432+(random.random())])
+    #std_dev 1.663596084712623e-05, 2.1743680968892167e-05
+    await GPSdevice.publish('singlePointGPS', [52.132653+(random.random()), 106.628004+(random.random())])
 
 # @GPSdevice.every(LOOP_PERIOD)
 async def every():
