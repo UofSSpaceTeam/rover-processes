@@ -1,4 +1,4 @@
-from procman.ProcessManager import ProcessManager, RunOnce
+from robocluster_manager.ProcessManager import ProcessManager, RunOnce
 
 
 process_list = [
