@@ -23,7 +23,7 @@ def create_covariance_of_observation_noise(num_dimensions):
     # this is currently completely manual
     R = np.zeros((2 * num_dimensions, 2 * num_dimensions))  # TODO: Figure out what this matrix actually is
     R[0, 0] = 60.125
-    R[2, 2] = 10.308
+    R[2, 2] = 60.125#10.308
     R[0, 2] = 8.783
     R[2, 0] = 8.783
     return R
