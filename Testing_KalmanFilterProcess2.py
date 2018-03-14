@@ -88,6 +88,7 @@ def create_initial_state_vector(num_dimensions, initial_conditions=0):
 
 def create_control_inputs_vector(ax, ay):
     # takes accelerometer data and turns it into acceleration in northing easting and then creates a vector
+    #u = np.array([[ax],[ay]])
     u = np.zeros((2, 1))  # TODO: actually calculate acceleration in northing easting and create vector
     return u
 
@@ -153,6 +154,8 @@ filtered_gps_lat = []
 filtered_gps_long = []
 
 for index in range(len(latitude)):
+
+    u = create_control_inputs_vector(ax, ay)
     gps_latitude = latitude[index]
     gps_longitude = longitude[index]
     gps_latitude2 = utm.from_latlon(gps_latitude, gps_longitude)[0]

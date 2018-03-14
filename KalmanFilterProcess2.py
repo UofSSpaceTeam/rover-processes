@@ -158,10 +158,11 @@ async def kalman_filter(event, data):
     R = KalmanFilter.storage.R
     v = KalmanFilter.storage.v
     u = KalmanFilter.storage.u
+    # u = create_control_inputs_vector(ax, ay) is where the accelerometer values go
     gps_latitude = data[0]
     gps_longitude = data[1]
     [x_cp, P_cp] = predict(F, x_pp, B, u, P_pp, Q)
-    [z, zone_info] = observation(gps_latitude, gps_longitude, H, v)
+    [z, zone_info] = observation(gps_latitude, gps_longitude, H, v)  # This is where gps values are inputted
     [x_cc, P_cc] = update(num_dimensions, x_cp, P_cp, z, H, R)
     true_gps = utm.to_latlon(x_cc[0, 0], x_cc[1, 0], zone_info[0], zone_info[1], strict=False)  # this has the value we
 
