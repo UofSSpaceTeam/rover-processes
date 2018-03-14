@@ -21,7 +21,7 @@ def create_covariance_of_process_noise(num_dimensions):
 
 def create_covariance_of_observation_noise(num_dimensions):
     # this is currently completely manual
-    R = np.zeros((2 * num_dimensions, 2 * num_dimensions))  # TODO: Figure out what this matrix actually is
+    R = np.zeros((2 * num_dimensions, 2 * num_dimensions))
     R[0, 0] = 60.125
     R[2, 2] = 60.125#10.308
     R[0, 2] = 8.783
@@ -32,7 +32,8 @@ def create_observation_noise(num_dimensions):
     # this is currently completely manual
     # drawn from zero mean white noise gaussian with covariance, R:v ~ N(0,R)
     v = np.zeros((2 * num_dimensions, 1))  # TODO: Figure out what this vector/matrix is
-
+    v[0, 0] = 0.001
+    v[1, 0] = 0.001
     return v
 
 def create_state_transition_model(time_step, num_dimensions):
@@ -88,6 +89,7 @@ def create_initial_state_vector(num_dimensions, initial_conditions=0):
 
 def create_control_inputs_vector(ax, ay):
     # takes accelerometer data and turns it into acceleration in northing easting and then creates a vector
+    u = np.array([[ax],[ay]])
     u = np.zeros((2, 1))  # TODO: actually calculate acceleration in northing easting and create vector
     return u
 
