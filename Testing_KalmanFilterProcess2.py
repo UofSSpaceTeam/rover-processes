@@ -1,38 +1,38 @@
 import numpy as np
 import utm as utm
+import statistics as stats
 from robocluster import Device
 import random as random
-import matplotlib.pyplot as plt
-import time
 
-KalmanFilter = Device('KalmanFilter', 'rover')
+latitude = []
+longitude = []
 
-DummyGPS = Device('DummyGPS', 'rover')
-@DummyGPS.every('0.1s')
-async def dummy():
-    #await DummyGPS.publish('singlePointGPS', [51.00000+(random.randrange(400, 600)/1000000), 110.00000+(random.randrange(600, 800)/1000000)])
-    await DummyGPS.publish('singlePointGPS', [random.gauss(52.13255308, 0.0000699173), random.gauss(-106.6279284, 0.0000460515)])
+for index in range(1000):
+    latitude.append(random.gauss(52.13255308, 0.0000699173))
+    longitude.append(random.gauss(-106.6279284, 0.0000460515))
 
 
 def create_covariance_of_process_noise(num_dimensions):
     # this is currently completely manual
-    Q = np.eye(2 * num_dimensions)  # TODO: Figure out what this matrix actually is
+    Q = np.eye(2 * num_dimensions)*0.005  # TODO: Figure out what this matrix actually is
     return Q
 
 def create_covariance_of_observation_noise(num_dimensions):
     # this is currently completely manual
-    R = np.zeros((2 * num_dimensions, 2 * num_dimensions))  # TODO: Figure out what this matrix actually is
+    # these values are taken from RoverGPSstatistics
+    R = np.zeros((2 * num_dimensions, 2 * num_dimensions))
     R[0, 0] = 60.125
-    R[2, 2] = 10.308
-    R[0, 2] = 8.783
-    R[2, 0] = 8.783
+    R[1, 1] = 60.125
+    R[0, 1] = 8.783
+    R[1, 0] = 8.783
     return R
 
 def create_observation_noise(num_dimensions):
     # this is currently completely manual
     # drawn from zero mean white noise gaussian with covariance, R:v ~ N(0,R)
     v = np.zeros((2 * num_dimensions, 1))  # TODO: Figure out what this vector/matrix is
-
+    v[0, 0] = 0.001
+    v[1, 0] = 0.001
     return v
 
 def create_state_transition_model(time_step, num_dimensions):
@@ -57,7 +57,7 @@ def create_observation_model(num_dimensions):
     # space. For our uses this is simply an identity matrix.
     H = np.eye(2 * num_dimensions)
     for index in range(num_dimensions):
-        H[(2 * index) + 1, (2 * index) +1] = 0
+        H[index + 2, index + 2] = 0
     return H
 
 def create_initial_process_error_covariance_matrix(num_dimensions, variance=0):
@@ -82,8 +82,8 @@ def create_initial_state_vector(num_dimensions, initial_conditions=0):
     # Don't believe this is actually too important though
     x_pp = np.zeros((2 * num_dimensions, 1))
     if initial_conditions != 0:
-        for index in range(2 * num_dimensions):
-            x_pp[index, 1] = initial_conditions[index]
+        for index in range(num_dimensions):
+            x_pp[index, 0] = initial_conditions[index]
     return x_pp
 
 def create_control_inputs_vector(ax, ay):
@@ -102,10 +102,11 @@ def observation(gps_latitude, gps_longitude, H, v):
     # currently only for 2d system
     # takes GPS measurements and converts them to northing and easting values.
     [x_meas, y_meas, zone_number, zone_letter] = utm.from_latlon(gps_latitude, gps_longitude)
-    x_m = np.mat([[x_meas], [0], [y_meas], [0]])
+    x_m = np.mat([[x_meas], [y_meas], [0], [0]])
+    data2 = [x_meas, y_meas]
     zone_info = [zone_number, zone_letter]
     z = np.dot(H, x_m) + v
-    return z, zone_info
+    return z, zone_info, data2
 
 def update(num_dimensions, x_cp, P_cp, z, H, R):
     # takes in the (a priori) estimates along with the observations and appropriate matrices to calculate the true
@@ -113,87 +114,94 @@ def update(num_dimensions, x_cp, P_cp, z, H, R):
     I = np.eye(len(x_cp))  # Identity matrix needed for calculations
     y_p = z - np.dot(H, x_cp)  # measurement pre-fit residual
     S = R + np.dot(H, np.dot(P_cp, H.T)) # pre_fit residual covariance
-    S[S == 0] = 1
+    #S[S == 0] = 1
     K = np.dot(P_cp, H.T) / S  # Optimal Kalman gain
-
     K[np.isnan(K)] = 0
+    K[np.isinf(K)] = 0
 
     x_cc = x_cp + np.dot(K, y_p)  # updated (a posteriori) state estimate
     L = (I - np.dot(K, H))  # intermediate calculation needed for later
     P_cc = np.dot(L, np.dot(P_cp, L.T)) + np.dot(K, np.dot(R, K.T)) # updated (a posteriori) estimate covariance
+    P_cc[np.isnan(P_cc)] = 0
     y_c = z - np.dot(H, x_cc)  # measurement post-fit residual, we will probably never use this
     return x_cc, P_cc
 
 
-@KalmanFilter.task
-def start_up_kalman_filter():
-    #User defined variables
     #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    dt = 0.1  # time step (can be determined by rate that GPS readings come in)
-    num_dimensions = 2  # number of dimensions in model
-    ax = 0
-    ay = 0
-    KalmanFilter.storage.dt = dt
-    KalmanFilter.storage.F = create_state_transition_model(dt, num_dimensions)
-    KalmanFilter.storage.B = create_control_input_model(dt, num_dimensions)
-    KalmanFilter.storage.H = create_observation_model(num_dimensions)
-    KalmanFilter.storage.x_pp = create_initial_state_vector(num_dimensions)
-    KalmanFilter.storage.P_pp = create_initial_process_error_covariance_matrix(num_dimensions)
-    KalmanFilter.storage.Q = create_covariance_of_process_noise(num_dimensions)
-    KalmanFilter.storage.R = create_covariance_of_observation_noise(num_dimensions)
-    KalmanFilter.storage.v = create_observation_noise(num_dimensions)
-    KalmanFilter.storage.u = create_control_inputs_vector(ax, ay)
+dt = 0.1  # time step (can be determined by rate that GPS readings come in)
+num_dimensions = 2  # number of dimensions in model
+ax = 0
+ay = 0
+initialx = utm.from_latlon(52.13255308, -106.6279284)[0]
+initialy = utm.from_latlon(52.13255308, -106.6279284)[1]
+initial = [initialx, initialy]
+F = create_state_transition_model(dt, num_dimensions)
+B = create_control_input_model(dt, num_dimensions)
+H = create_observation_model(num_dimensions)
+x_pp = create_initial_state_vector(num_dimensions, initial)
+P_pp = create_initial_process_error_covariance_matrix(num_dimensions)
+Q = create_covariance_of_process_noise(num_dimensions)
+R = create_covariance_of_observation_noise(num_dimensions)
+v = create_observation_noise(num_dimensions)
+u = create_control_inputs_vector(ax, ay)
+accurate_lat = 0
+accurate_long = 0
+accurate_lat2 = 0
+accurate_long2 = 0
+trials1 = 0
+filtered_gps_lat = []
+filtered_gps_long = []
 
-
-
-@KalmanFilter.on('*/singlePointGPS')
-async def kalman_filter(event, data):
-    num_dimensions = 2
-    F = KalmanFilter.storage.F
-    B = KalmanFilter.storage.B
-    H = KalmanFilter.storage.H
-    x_pp = KalmanFilter.storage.x_pp
-    P_pp = KalmanFilter.storage.P_pp
-    Q = KalmanFilter.storage.Q
-    R = KalmanFilter.storage.R
-    v = KalmanFilter.storage.v
-    u = KalmanFilter.storage.u
-    gps_latitude = data[0]
-    gps_longitude = data[1]
+for index in range(len(latitude)):
+    gps_latitude = latitude[index]
+    gps_longitude = longitude[index]
+    gps_latitude2 = utm.from_latlon(gps_latitude, gps_longitude)[0]
+    gps_longitude2 = utm.from_latlon(gps_latitude, gps_longitude)[1]
+    data = [gps_latitude, gps_longitude]
     [x_cp, P_cp] = predict(F, x_pp, B, u, P_pp, Q)
-    [z, zone_info] = observation(gps_latitude, gps_longitude, H, v)
+    [z, zone_info, data2] = observation(gps_latitude, gps_longitude, H, v)
     [x_cc, P_cc] = update(num_dimensions, x_cp, P_cp, z, H, R)
     true_gps = utm.to_latlon(x_cc[0, 0], x_cc[1, 0], zone_info[0], zone_info[1], strict=False)  # this has the value we
+    true_gps2 = [x_cc[0, 0], x_cc[1, 0]]
+    filtered_gps_lat.append(true_gps[0])
+    filtered_gps_long.append(true_gps[1])
+    pres = 2
+    print('raw: {}'.format(data2))
+    print("                                             filtered: {}".format(true_gps2))
+    dif_lat = abs(true_gps2[0] - initial[0])
+    dif_long = abs(true_gps2[1] - initial[1])
+    if dif_lat < pres:
+        print('Accurate Lat : ', dif_lat)
+        accurate_lat += 1
+    if dif_long < pres:
+        print('Accurate Long : ', dif_long)
+        accurate_long += 1
 
-    pres = 0.00001
-    print('raw: {}'.format(data))
-    print("                                             filtered: {}".format(true_gps))
-    dif_lat = abs(true_gps[0] - 51.000000)
-    dif_long = abs(true_gps[1] - 110.000000)
-    if dif_lat < pres and dif_long < pres:
-        print('Accurate: ', dif_lat, ', ', dif_long)
-    else:
-        print('Try Again: ', dif_lat, ', ', dif_long)
+    trials1 += 1
+
+    dif_lat = abs(gps_latitude2 - initial[0])
+    dif_long = abs(gps_longitude2 - initial[1])
+    if dif_lat < pres:
+        print('Accurate Lat : ', dif_lat)
+        accurate_lat2 += 1
+    if dif_long < pres:
+        print('Accurate Long : ', dif_long)
+        accurate_long2 += 1
 
 
 
-    await KalmanFilter.publish('FilteredGPS', true_gps)
-    KalmanFilter.storage.x_pp = x_cc
-    KalmanFilter.storage.P_pp = P_cc
+    x_pp = x_cc
+    P_pp = P_cc
 
+print('\nprecision: ', pres, 'm\n')
 
-try:
-    KalmanFilter.start()
-    DummyGPS.start()
-    time.sleep(35)
-    KalmanFilter.stop()
-    for i in range(0,350):
-        print("{},{}".format(KalmanFilter.storage.filtered_x[i], KalmanFilter.storage.filtered_y[i]))
-    print("New Data\n\n")
-    for i in range(0,350):
-        print("{},{}".format(KalmanFilter.storage.noise_x[i], KalmanFilter.storage.noise_y[i]))
+print('unfiltered: ')
+print('accurate lat ', (accurate_lat2)/(trials1)*100,'%')
+print('accurate long ', (accurate_long2)/(trials1)*100,'%')
+print('variance of unfiltered lat, long: ', stats.variance(latitude), stats.variance(longitude))
 
-    DummyGPS.wait()
-except KeyboardInterrupt:
-    KalmanFilter.stop()
-    DummyGPS.stop()
+print('\n')
+print('filtered: ')
+print('accurate lat ', (accurate_lat)/(trials1)*100,'%')
+print('accurate long ', (accurate_long)/(trials1)*100,'%')
+print('variance of filtered lat, long: ', stats.variance(filtered_gps_lat), stats.variance(filtered_gps_long))
