@@ -8,7 +8,7 @@ import time
 KalmanFilter = Device('KalmanFilter', 'rover')
 
 DummyGPS = Device('DummyGPS', 'rover')
-@DummyGPS.every('0.1s')
+# @DummyGPS.every('0.1s')
 async def dummy():
     #await DummyGPS.publish('singlePointGPS', [51.00000+(random.randrange(400, 600)/1000000), 110.00000+(random.randrange(600, 800)/1000000)])
     await DummyGPS.publish('singlePointGPS', [random.gauss(52.13255308, 0.0000699173), random.gauss(-106.6279284, 0.0000460515)])
@@ -187,16 +187,12 @@ async def kalman_filter(event, data):
 
 try:
     KalmanFilter.start()
-    DummyGPS.start()
-    time.sleep(35)
-    KalmanFilter.stop()
+    KalmanFilter.wait()
     for i in range(0,350):
         print("{},{}".format(KalmanFilter.storage.filtered_x[i], KalmanFilter.storage.filtered_y[i]))
     print("New Data\n\n")
     for i in range(0,350):
         print("{},{}".format(KalmanFilter.storage.noise_x[i], KalmanFilter.storage.noise_y[i]))
 
-    DummyGPS.wait()
 except KeyboardInterrupt:
     KalmanFilter.stop()
-    DummyGPS.stop()
