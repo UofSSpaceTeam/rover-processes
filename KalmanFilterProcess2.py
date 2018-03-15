@@ -83,7 +83,7 @@ def create_initial_state_vector(num_dimensions, initial_conditions=0):
     # Don't believe this is actually too important though
     x_pp = np.zeros((2 * num_dimensions, 1))
     if initial_conditions != 0:
-        for index in range(2 * num_dimensions):
+        for index in range(num_dimensions):
             x_pp[index, 1] = initial_conditions[index]
     return x_pp
 
