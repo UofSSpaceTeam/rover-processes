@@ -1,5 +1,6 @@
 import numpy as np
 import utm as utm
+import statistics as stats
 from robocluster import Device
 import random as random
 import matplotlib.pyplot as plt
@@ -107,8 +108,9 @@ def observation(gps_latitude, gps_longitude, H, v):
     [x_meas, y_meas, zone_number, zone_letter] = utm.from_latlon(gps_latitude, gps_longitude)
     x_m = np.mat([[x_meas], [y_meas], [0], [0]])
     zone_info = [zone_number, zone_letter]
+    data2 = [x_meas, y_meas] #TODO delete this line of code
     z = np.dot(H, x_m) + v
-    return z, zone_info
+    return z, zone_info, data2
 
 def update(num_dimensions, x_cp, P_cp, z, H, R):
     '''takes in the (a priori) estimates along with the observations and appropriate matrices to calculate the true
@@ -163,24 +165,27 @@ async def kalman_filter(event, data):
     R = KalmanFilter.storage.R
     v = KalmanFilter.storage.v
     u = KalmanFilter.storage.u
+
+    # TODO: Take a look at this "TODO" block
     # u = create_control_inputs_vector(ax, ay) is where the accelerometer values go
-    gps_latitude = data[0]
+    # TODO: Does u need to be uncommented? Are you feeding in accelerometer data?
+    gps_latitude = data[0]  # Is this causing issues?
     gps_longitude = data[1]
     [x_cp, P_cp] = predict(F, x_pp, B, u, P_pp, Q)
     [z, zone_info] = observation(gps_latitude, gps_longitude, H, v)  # This is where gps values are inputted
+    # TODO: Is observation taking in the correct paramaters the way this is set up now
     [x_cc, P_cc] = update(num_dimensions, x_cp, P_cp, z, H, R)
     true_gps = utm.to_latlon(x_cc[0, 0], x_cc[1, 0], zone_info[0], zone_info[1], strict=False)  # this has the value we
 
-    pres = 0.00001
+    pres = 0.0001
     print('raw: {}'.format(data))
     print("                                             filtered: {}".format(true_gps))
-    dif_lat = abs(true_gps[0] - 51.000000)
-    dif_long = abs(true_gps[1] - 110.000000)
+    dif_lat = abs(true_gps[0] - 51.000000)  # TODO: Carl, add the "True Position" to the values here
+    dif_long = abs(true_gps[1] - 110.000000) # TODO: and here
     if dif_lat < pres and dif_long < pres:
         print('Accurate: ', dif_lat, ', ', dif_long)
     else:
         print('Try Again: ', dif_lat, ', ', dif_long)
-
 
 
     await KalmanFilter.publish('FilteredGPS', true_gps)
@@ -199,3 +204,6 @@ try:
 
 except KeyboardInterrupt:
     KalmanFilter.stop()
+
+
+
