@@ -17,7 +17,7 @@ async def dummy():
 
 def create_covariance_of_process_noise(num_dimensions):
     # this is currently completely manual
-    Q = np.eye(2 * num_dimensions)  # TODO: Figure out what this matrix actually is
+    Q = np.eye(2 * num_dimensions)*0.005  # TODO: Figure out what this matrix actually is
     return Q
 
 def create_covariance_of_observation_noise(num_dimensions):
@@ -60,7 +60,7 @@ def create_observation_model(num_dimensions):
     space. For our uses this is simply an identity matrix.'''
     H = np.eye(2 * num_dimensions)
     for index in range(num_dimensions):
-        H[(2 * index) + 1, (2 * index) +1] = 0
+        H[index + 2, index + 2] = 0
     return H
 
 def create_initial_process_error_covariance_matrix(num_dimensions, variance=0):
@@ -76,7 +76,7 @@ def create_initial_process_error_covariance_matrix(num_dimensions, variance=0):
             P_pp[index, index] = variance[index]
     return P_pp
 
-def create_initial_state_vector(num_dimensions, initial_conditions=0):
+def create_initial_state_vector(num_dimensions, initial_conditions = (0, 0)):
     '''takes in the number of dimensions and the initial conditions and creates an initial state vector.
     If initial positions are chosen to be entered then they should be in a list of the form
     pos1, pos2, ..., posn, vel1, vel2, ..., veln. This is opposed to a model of the form pos1, vel1, pos2, vel2...
@@ -84,15 +84,15 @@ def create_initial_state_vector(num_dimensions, initial_conditions=0):
     the variance in the initial process error covariance matrix should have npne default variance parameters.
     Don't believe this is actually too important though'''
     x_pp = np.zeros((2 * num_dimensions, 1))
-    if initial_conditions != 0:
+    if initial_conditions != (0, 0):
         for index in range(num_dimensions):
             x_pp[index, 0] = initial_conditions[index]
     return x_pp
 
-def create_control_inputs_vector(ax, ay):
+def create_control_inputs_vector(ax = 0, ay = 0):
     '''takes accelerometer data and turns it into acceleration in northing easting and then creates a vector'''
     u = np.array([[ax],[ay]])
-    u = np.zeros((2, 1))  # TODO: actually calculate acceleration in northing easting and create vector
+    #u = np.zeros((2, 1))  # TODO: actually calculate acceleration in northing easting and create vector
     return u
 
 def predict(F, x_pp, B, u, P_pp, Q):
@@ -107,10 +107,10 @@ def observation(gps_latitude, gps_longitude, H, v):
     takes GPS measurements and converts them to northing and easting values.'''
     [x_meas, y_meas, zone_number, zone_letter] = utm.from_latlon(gps_latitude, gps_longitude)
     x_m = np.mat([[x_meas], [y_meas], [0], [0]])
+    #cart_pos = [x_meas, y_meas]
     zone_info = [zone_number, zone_letter]
-    data2 = [x_meas, y_meas] #TODO delete this line of code
     z = np.dot(H, x_m) + v
-    return z, zone_info, data2
+    return z, zone_info
 
 def update(num_dimensions, x_cp, P_cp, z, H, R):
     '''takes in the (a priori) estimates along with the observations and appropriate matrices to calculate the true
@@ -118,9 +118,8 @@ def update(num_dimensions, x_cp, P_cp, z, H, R):
     I = np.eye(len(x_cp))  # Identity matrix needed for calculations
     y_p = z - np.dot(H, x_cp)  # measurement pre-fit residual
     S = R + np.dot(H, np.dot(P_cp, H.T)) # pre_fit residual covariance
-    S[S == 0] = 1
+    #S[S == 0] = 1
     K = np.dot(P_cp, H.T) / S  # Optimal Kalman gain
-
     K[np.isnan(K)] = 0
     K[np.isinf(K)] = 0
 
@@ -140,11 +139,14 @@ def start_up_kalman_filter():
     num_dimensions = 2  # number of dimensions in model
     ax = 0
     ay = 0
+    initial = [52.132653, -106.628012]
+    initial_cart = utm.from_latlon(initial[0], initial[1])
+    KalmanFilter.storage.initial_cart = initial_cart
     KalmanFilter.storage.dt = dt
     KalmanFilter.storage.F = create_state_transition_model(dt, num_dimensions)
     KalmanFilter.storage.B = create_control_input_model(dt, num_dimensions)
     KalmanFilter.storage.H = create_observation_model(num_dimensions)
-    KalmanFilter.storage.x_pp = create_initial_state_vector(num_dimensions, intial)
+    KalmanFilter.storage.x_pp = create_initial_state_vector(num_dimensions, initial)
     KalmanFilter.storage.P_pp = create_initial_process_error_covariance_matrix(num_dimensions)
     KalmanFilter.storage.Q = create_covariance_of_process_noise(num_dimensions)
     KalmanFilter.storage.R = create_covariance_of_observation_noise(num_dimensions)
@@ -165,27 +167,49 @@ async def kalman_filter(event, data):
     R = KalmanFilter.storage.R
     v = KalmanFilter.storage.v
     u = KalmanFilter.storage.u
+    initial_cart = KalmanFilter.storage.initial_cart
 
-    # TODO: Take a look at this "TODO" block
-    # u = create_control_inputs_vector(ax, ay) is where the accelerometer values go
-    # TODO: Does u need to be uncommented? Are you feeding in accelerometer data?
+    #u = create_control_inputs_vector(ax, ay) #is where the accelerometer values go
     gps_latitude = data[0]  # Is this causing issues?
     gps_longitude = data[1]
     [x_cp, P_cp] = predict(F, x_pp, B, u, P_pp, Q)
     [z, zone_info] = observation(gps_latitude, gps_longitude, H, v)  # This is where gps values are inputted
-    # TODO: Is observation taking in the correct paramaters the way this is set up now
     [x_cc, P_cc] = update(num_dimensions, x_cp, P_cp, z, H, R)
     true_gps = utm.to_latlon(x_cc[0, 0], x_cc[1, 0], zone_info[0], zone_info[1], strict=False)  # this has the value we
+    cart_pos_final = [x_cc[0,0], x_cc[1,0]]
 
-    pres = 0.0001
     print('raw: {}'.format(data))
     print("                                             filtered: {}".format(true_gps))
-    dif_lat = abs(true_gps[0] - 51.000000)  # TODO: Carl, add the "True Position" to the values here
-    dif_long = abs(true_gps[1] - 110.000000) # TODO: and here
-    if dif_lat < pres and dif_long < pres:
-        print('Accurate: ', dif_lat, ', ', dif_long)
+
+    ''' pres = 0.00001
+    dif_lat = abs(true_gps[0] - 52.132653)
+    dif_long = abs(true_gps[1] + 106.628012)
+    if dif_lat < pres:
+        print('Accurate Lat : ', dif_lat)
+    if dif_long < pres:
+        print('Accurate Long : ', dif_long)'''
+
+    '''pres = 0.5
+    dif_lat = abs(cart_pos_final[0] - initial_cart[0])
+    dif_long = abs(cart_pos_final[1] - initial_cart[1])
+    if dif_lat < pres:
+        print('Accurate Lat : ', dif_lat)
+    if dif_long < pres:
+        print('Accurate Long : ', dif_long)
     else:
-        print('Try Again: ', dif_lat, ', ', dif_long)
+        print('North dif: ', dif_lat, 'East dif: ', dif_long)'''
+
+    pres = 1
+    dif_lat = abs(cart_pos_final[0] - simDevice.storage.rover.position[0])
+    dif_long = abs(cart_pos_final[1] - simDevice.storage.rover.position[1])
+    if dif_lat < pres:
+        print('Accurate Lat : ', dif_lat)
+    if dif_long < pres:
+        print('Accurate Long : ', dif_long)
+    else:
+        print('North dif: ', dif_lat, 'East dif: ', dif_long)
+
+
 
 
     await KalmanFilter.publish('FilteredGPS', true_gps)
