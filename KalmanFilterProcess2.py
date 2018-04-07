@@ -118,7 +118,7 @@ def update(num_dimensions, x_cp, P_cp, z, H, R):
     I = np.eye(len(x_cp))  # Identity matrix needed for calculations
     y_p = z - np.dot(H, x_cp)  # measurement pre-fit residual
     S = R + np.dot(H, np.dot(P_cp, H.T)) # pre_fit residual covariance
-    S[S == 0] = 1
+    #S[S == 0] = 1
     K = np.dot(P_cp, H.T) / S  # Optimal Kalman gain
     K[np.isnan(K)] = 0
     K[np.isinf(K)] = 0
@@ -189,7 +189,7 @@ async def kalman_filter(event, data):
     if dif_long < pres:
         print('Accurate Long : ', dif_long)'''
 
-    '''pres = 0.5
+    pres = 0.5
     dif_lat = abs(cart_pos_final[0] - initial_cart[0])
     dif_long = abs(cart_pos_final[1] - initial_cart[1])
     if dif_lat < pres:
@@ -197,19 +197,7 @@ async def kalman_filter(event, data):
     if dif_long < pres:
         print('Accurate Long : ', dif_long)
     else:
-        print('North dif: ', dif_lat, 'East dif: ', dif_long)'''
-
-    pres = 1
-    dif_lat = abs(cart_pos_final[0] - simDevice.storage.rover.position[0])
-    dif_long = abs(cart_pos_final[1] - simDevice.storage.rover.position[1])
-    if dif_lat < pres:
-        print('Accurate Lat : ', dif_lat)
-    if dif_long < pres:
-        print('Accurate Long : ', dif_long)
-    else:
         print('North dif: ', dif_lat, 'East dif: ', dif_long)
-
-
 
 
     await KalmanFilter.publish('FilteredGPS', true_gps)
