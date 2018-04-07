@@ -153,6 +153,10 @@ def start_up_kalman_filter():
     KalmanFilter.storage.v = create_observation_noise(num_dimensions)
     KalmanFilter.storage.u = create_control_inputs_vector(ax, ay)
 
+@KalmanFilter.on('*/Acceleration')
+async def update_accel(event, data):
+    print(data)
+    KalmanFilter.storage.u = data
 
 
 @KalmanFilter.on('*/singlePointGPS')
@@ -189,15 +193,6 @@ async def kalman_filter(event, data):
     if dif_long < pres:
         print('Accurate Long : ', dif_long)'''
 
-    pres = 0.5
-    dif_lat = abs(cart_pos_final[0] - initial_cart[0])
-    dif_long = abs(cart_pos_final[1] - initial_cart[1])
-    if dif_lat < pres:
-        print('Accurate Lat : ', dif_lat)
-    if dif_long < pres:
-        print('Accurate Long : ', dif_long)
-    else:
-        print('North dif: ', dif_lat, 'East dif: ', dif_long)
 
 
     await KalmanFilter.publish('FilteredGPS', true_gps)
