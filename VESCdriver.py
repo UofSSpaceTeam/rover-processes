@@ -16,7 +16,7 @@ class ReaderThread(threading.Thread):
     def run(self):
         while not self.exit:
             vesc_msg = self.driver.read()
-            self.callback(vesc_msg)
+            self.callback(vesc_msg, self.driver.usbpath)
 
 
 class VESCDriver:
@@ -27,16 +27,14 @@ class VESCDriver:
         Args:
             usbpath (str): The path or comport for the serial device
             buadrate (int): The baudrate to communicate at. defaults to 115200.
-            read_callback (function): If specified, a background thread will continually read from the device and call read_callback, passing in a pyvesc VESC message.
+            read_callback (function): If specified, a background thread will
+            continually read from the device and call read_callback,
+            passing in a pyvesc VESC message and the usbpath it came from.
         '''
         self.usbpath = usbpath
         self.baudrate = 115200
         self.ser = serial.Serial(usbpath, baudrate=baudrate)
-        if read_callback is not None:
-            self.reader_thread = ReaderThread(self, read_callback)
-            self.reader_thread.start()
-        else:
-            self.reader_thread = None
+        self.start_reader(read_callback)
 
 
     def write(self, vesc_message):
@@ -55,6 +53,20 @@ class VESCDriver:
         length = self.ser.read(to_int(head) - 1)
         packet = head + length + self.ser.read(to_int(length) + 4)
         return pyvesc.decode(packet)[0]
+
+    def start_reader(self, callback):
+        ''' Starts a background reader thread.
+        Args:
+            callback (function): If specified, a background thread
+            will continually read from the device and call read_callback,
+            passing in a pyvesc VESC message and the usbpath it came from.
+        '''
+        if callback is not None:
+            self.reader_thread = ReaderThread(self, callback)
+            self.reader_thread.start()
+        else:
+            self.reader_thread = None
+
 
     def stop(self):
         '''If a reader thread is running, shut it down.'''
