@@ -74,7 +74,7 @@ def get_subscribers():
 
 @manager.every('1s')
 def print_devices():
-    print(manager.storage.drivers)
+    print("Devices: ", [key for key in manager.storage.drivers.keys()])
 
 
 try:
@@ -82,6 +82,6 @@ try:
     manager.start()
     manager.wait()
 except KeyboardInterrupt:
+    manager.stop()
     for i in manager.storage.drivers:
         manager.storage.drivers[i].stop()
-    manager.stop()
