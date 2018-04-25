@@ -62,13 +62,18 @@ def get_subscribers():
                 driver.start_reader(handle_vesc_message)
                 manager.storage.drivers[msg.subscription] = driver
                 manager.storage.sub_map[port.device] = msg.subscription
-                @manager.on('*/'+msg.subscription)
-                def write_to_device(event, data):
-                    if 'USBManager' in event:
-                        # So we don't listen to ourself TODO: use negation in globbing instead?
-                        return
-                    vesc_message = dict_to_vesc(data)
-                    driver.write(vesc_message) # blocking
+                print('*/'+msg.subscription)
+                def gen():
+                    def _write_to_device(event, data):
+                        if 'USBManager' in event:
+                            # So we don't listen to ourself TODO: use negation in globbing instead?
+                            return
+                        dvr = manager.storage.drivers[msg.subscription]
+                        print('driver', dvr.usbpath)
+                        vesc_message = dict_to_vesc(data)
+                        dvr.write(vesc_message) # blocking
+                    return _write_to_device
+                manager.on('*/'+msg.subscription, gen())
 
                 break
 
