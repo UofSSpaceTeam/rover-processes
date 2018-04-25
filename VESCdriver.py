@@ -16,7 +16,8 @@ class ReaderThread(threading.Thread):
     def run(self):
         while not self.exit:
             vesc_msg = self.driver.read()
-            self.callback(vesc_msg, self.driver.usbpath)
+            if vesc_msg is not None:
+                self.callback(vesc_msg, self.driver.usbpath)
 
 
 class VESCDriver:
@@ -49,9 +50,9 @@ class VESCDriver:
         head = self.ser.read()
         # magic VESC header must be 2 or 3
         if not to_int(head) == 2 or to_int(head) == 3:
-                return (None, None)
+                return None
         length = self.ser.read(to_int(head) - 1)
-        packet = head + length + self.ser.read(to_int(length) + 4)
+        packet = head + length + self.ser.read(to_int(length) + 3)
         return pyvesc.decode(packet)[0]
 
     def start_reader(self, callback):

@@ -7,6 +7,8 @@ import pyvesc
 
 from VESCdriver import VESCDriver
 
+IGNORE_LIST = ['/dev/ttyS0']
+
 
 manager = Device('USBManager', 'rover')
 manager.storage.drivers = {}
@@ -45,13 +47,13 @@ def handle_vesc_message(vesc_message, path):
         async def pub_message():
             await manager.publish(sub, vesc_to_dict(vesc_message))
 
-@manager.task
+# @manager.task
 def get_subscribers():
     PortList = serial.tools.list_ports.comports()
     for port in PortList:
-        if port.device == '/dev/ttyS0':
+        if port.device in IGNORE_LIST:
             continue
-        # print(port.device)
+        print('Found {}'.format(port.device))
         driver = VESCDriver(port.device)
         driver.write(pyvesc.ReqSubscription('t')) # blocking
         while True:
@@ -63,9 +65,10 @@ def get_subscribers():
                 @manager.on('*/'+msg.subscription)
                 def write_to_device(event, data):
                     if 'USBManager' in event:
+                        # So we don't listen to ourself TODO: use negation in globbing instead?
                         return
                     vesc_message = dict_to_vesc(data)
-                    driver.write(vesc_message)
+                    driver.write(vesc_message) # blocking
 
                 break
 
@@ -75,6 +78,7 @@ def print_devices():
 
 
 try:
+    get_subscribers()
     manager.start()
     manager.wait()
 except KeyboardInterrupt:
