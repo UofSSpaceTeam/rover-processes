@@ -81,11 +81,6 @@ def print_devices():
     print("Devices: ", [key for key in manager.storage.drivers.keys()])
 
 
-try:
-    get_subscribers()
-    manager.start()
-    manager.wait()
-except KeyboardInterrupt:
-    manager.stop()
-    for i in manager.storage.drivers:
-        manager.storage.drivers[i].stop()
+get_subscribers()
+manager.start()
+manager.wait()

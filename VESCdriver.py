@@ -12,6 +12,7 @@ class ReaderThread(threading.Thread):
         self.driver = driver
         self.exit = False
         self.callback = callback
+        self.daemon = True
 
     def run(self):
         while not self.exit:
