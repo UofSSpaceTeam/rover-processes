@@ -7,7 +7,7 @@ import pyvesc
 
 from VESCdriver import VESCDriver
 
-IGNORE_LIST = ['/dev/ttyS0']
+IGNORE_LIST = ['/dev/ttyS0', '/dev/ttyAMA0']
 
 
 manager = Device('USBManager', 'rover')
