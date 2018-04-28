@@ -9,7 +9,7 @@ os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.init()
 pygame.joystick.init()
 
-JoystickDevice = Device('JoystickDevice', 'demo_device')
+JoystickDevice = Device('JoystickDevice', 'rover')
 
 JoystickDevice.storage.joystick1 = pygame.joystick.Joystick(0)
 JoystickDevice.storage.joystick1.init()
@@ -22,4 +22,8 @@ async def every():
     await JoystickDevice.publish('joystick1', left)
     await JoystickDevice.publish('joystick2', right)
 
-JoystickDevice.run()
+try:
+    JoystickDevice.start()
+    JoystickDevice.wait()
+except KeyboardInterrupt:
+    JoystickDevice.stop()
