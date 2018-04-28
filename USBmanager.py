@@ -1,5 +1,6 @@
 import time
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 import serial.tools.list_ports
 from robocluster import Device
@@ -47,9 +48,9 @@ def handle_vesc_message(vesc_message, path):
         async def pub_message():
             await manager.publish(sub, vesc_to_dict(vesc_message))
 
-# @manager.task
 def get_subscribers():
     PortList = serial.tools.list_ports.comports()
+    manager.executor = ThreadPoolExecutor(max_workers=len(PortList))
     for port in PortList:
         if port.device in IGNORE_LIST:
             continue
@@ -64,15 +65,15 @@ def get_subscribers():
                 manager.storage.sub_map[port.device] = msg.subscription
                 print('*/'+msg.subscription)
                 @manager.on('*/'+msg.subscription)
-                def _write_to_device(event, data):
+                async def _write_to_device(event, data):
                     if 'USBManager' in event:
                         # So we don't listen to ourself TODO: use negation in globbing instead?
                         return
                     subscription = event.split('/')[-1]
                     dvr = manager.storage.drivers[subscription]
-                    print('driver', dvr.usbpath)
                     vesc_message = dict_to_vesc(data)
-                    dvr.write(vesc_message) # blocking
+                    await manager.loop.run_in_executor(
+                            manager.executor, dvr.write, vesc_message)
 
                 break
 
