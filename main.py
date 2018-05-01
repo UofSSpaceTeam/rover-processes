@@ -2,11 +2,11 @@ from robocluster_manager.ProcessManager import ProcessManager, RunOnce
 
 
 process_list = [
-    # RunOnce('USBManager', 'python USBmanager.py'),
-    RunOnce('Printer', 'python Printer.py'),
-    # RunOnce('GPSDriver', 'python GPSdriver.py'),
-    RunOnce('DriveControl', 'python DriveProcess.py'),
-    RunOnce('Joystick', 'python JoystickProcess.py'),
+    RunOnce('USBManager', 'python3 USBmanager.py'),
+     RunOnce('Printer', 'python3 Printer.py'),
+    # RunOnce('GPSDriver', 'python3 GPSdriver.py'),
+    RunOnce('DriveControl', 'python3 DriveProcess.py'),
+    RunOnce('Joystick', 'python3 JoystickProcess.py'),
 
 ]
 

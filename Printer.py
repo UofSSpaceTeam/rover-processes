@@ -6,12 +6,10 @@ Just prints everything it published from the robocluster network.
 
 printer = Device('printer', 'rover')
 
-@printer.on('*')
+@printer.on('*/*')
 def print_it(event, data):
     print(event, data)
 
 
-try:
-    printer.run()
-except KeyboardInterrupt:
-    pass
+printer.start()
+printer.wait()

@@ -1,64 +1,100 @@
-from robocluster import SerialDriver, Device
-from robocluster.ports.serial import SerialPort
-from pyvesc import SetRPM
+import time
+import threading
 
-class VESCDriver(Device):
-    """Device that exposes a serial device to the robocluster network."""
-
-    def __init__(self, name, group, loop=None, disable_receive_loop=False):
-        super().__init__(name, group, loop=loop)
-        self.encoding = 'vesc'
-        self.serial_port = SerialPort(name,
-                encoding=self.encoding, loop=self._loop,
-                disable_receive_loop=disable_receive_loop)
-        self.serial_port.on_recv('send', self.handle_packet)
-        self.serial_port.on_recv('publish', self.handle_packet)
-        self.serial_port.on_recv('heartbeat', self.handle_packet)
-        # self._router.on_message(self.forward_packet)
-        self.serial_port.start()
-
-    async def handle_packet(self, other, message):
-        """Forward messages from serial to robocluster network."""
-        print(message)
-        if message.type == 'heartbeat':
-            self.name = message.source
-            self._router.name = self.name
-
-    async def forward_packet(self, packet):
-        """Forwards messages from robocluster network to serial device."""
-        await self.serial_port.send(packet.to_json())
-
-    async def write(self, data):
-        """Write to the serial device."""
-        #TODO: the message creation is wrong...
-        if self.encoding == 'json':
-            msg = Message(self.name, 'publish', data)
-        elif self.encoding == 'vesc':
-            msg = data
-        await self.serial_port.send(msg)
+import serial
+from serial.tools import list_ports
+import pyvesc
 
 
-driver = VESCDriver('/dev/ttyACM0', 'rover')
-drive_device = Device('drive', 'rover')
+class ReaderThread(threading.Thread):
+    def __init__(self, driver, callback):
+        super().__init__()
+        self.driver = driver
+        self.exit = False
+        self.callback = callback
+        self.daemon = True
 
-@driver.every('1s')
-async def print_name():
-    print(driver.name)
+    def run(self):
+        while not self.exit:
+            vesc_msg = self.driver.read()
+            if vesc_msg is not None:
+                self.callback(vesc_msg, self.driver.usbpath)
 
-@driver.on('*/SetRPM')
-async def setrpm(event, data):
-    print(event, data)
-    await driver.write(SetRPM(int(data)))
 
-@drive_device.every('100ms')
-async def rpm():
-    await drive_device.send('wheelLF', 'SetRPM', 1500)
+class VESCDriver:
+    '''Provides a simple pyvesc and Serial wrapper for VESC serial devices.'''
 
-try:
-    driver.start()
-    drive_device.start()
-    driver.wait()
-    drive_device.wait()
-except KeyboardInterrupt:
+    def __init__(self, usbpath, baudrate=115200, read_callback=None):
+        '''Create a new device.
+        Args:
+            usbpath (str): The path or comport for the serial device
+            buadrate (int): The baudrate to communicate at. defaults to 115200.
+            read_callback (function): If specified, a background thread will
+            continually read from the device and call read_callback,
+            passing in a pyvesc VESC message and the usbpath it came from.
+        '''
+        self.usbpath = usbpath
+        self.baudrate = 115200
+        self.ser = serial.Serial(usbpath, baudrate=baudrate)
+        self.start_reader(read_callback)
+
+
+    def write(self, vesc_message):
+        '''Send a pyvesc VESC message to the device'''
+        b = pyvesc.encode(vesc_message)
+        self.ser.write(b)
+
+    def read(self):
+        '''Read a pyvesc VESC message from the device'''
+        # from Roveberrypy
+        to_int = lambda b: int.from_bytes(b, byteorder='big')
+        head = self.ser.read()
+        # magic VESC header must be 2 or 3
+        if not to_int(head) == 2 or to_int(head) == 3:
+                return None
+        length = self.ser.read(to_int(head) - 1)
+        packet = head + length + self.ser.read(to_int(length) + 3)
+        return pyvesc.decode(packet)[0]
+
+    def start_reader(self, callback):
+        ''' Starts a background reader thread.
+        Args:
+            callback (function): If specified, a background thread
+            will continually read from the device and call read_callback,
+            passing in a pyvesc VESC message and the usbpath it came from.
+        '''
+        if callback is not None:
+            self.reader_thread = ReaderThread(self, callback)
+            self.reader_thread.start()
+        else:
+            self.reader_thread = None
+
+
+    def stop(self):
+        '''If a reader thread is running, shut it down.'''
+        if self.reader_thread:
+            self.reader_thread.exit = True
+            self.reader_thread.join(0.1)
+
+def test_driver():
+    def callback(vesc_message):
+        print(vesc_message)
+    driver = VESCDriver('/dev/ttyACM0', read_callback=callback)
+    msg = pyvesc.BlinkLed(0)
+    try:
+        driver.write(msg)
+        time.sleep(1)
+        msg = pyvesc.BlinkLed(1)
+        driver.write(msg)
+        time.sleep(1)
+        msg = pyvesc.BlinkLed(0)
+        driver.write(msg)
+        time.sleep(1)
+        print('done')
+    except KeyboardInterrupt:
+        pass
     driver.stop()
-    drive_device.stop()
+
+
+if __name__ == '__main__':
+    test_driver()

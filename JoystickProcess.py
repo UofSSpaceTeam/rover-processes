@@ -22,18 +22,8 @@ async def read_joystick():
     await JoystickDevice.publish('joystick1', left)
     await JoystickDevice.publish('joystick2', right)
 
-printer = Device('printer', 'rover')
-
-@printer.on('*/joystick[1,2]')
-async def callback(event, data):
-    print(event, data)
-
-
 try:
     JoystickDevice.start()
-    # printer.start()
     JoystickDevice.wait()
-    # printer.wait()
 except KeyboardInterrupt:
     JoystickDevice.stop()
-    # printer.stop()
