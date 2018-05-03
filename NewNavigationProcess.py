@@ -56,7 +56,7 @@ def calculate_bearing(start, dest):
 def cacluate_distance(start, dest):
     p0 = GPSPosition(*start)
     p1 = GPSPosition(*dest)
-    return math.degrees(p0.distance(p1))
+    return p0.distance(p1)
 
 
 NavDevice.start()

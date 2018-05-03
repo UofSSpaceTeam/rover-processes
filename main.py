@@ -9,7 +9,7 @@ process_list = [
     # RunOnce('DriveControl', 'python3 DriveProcess.py'),
     # RunOnce('Joystick', 'python3 JoystickProcess.py'),
     RunOnce('Autopilot', 'python3 Autopilot.py'),
-    RunOnce('WebUI', 'python3 server.py', cwd='rover-webui'),
+    # RunOnce('WebUI', 'python3 server.py', cwd='rover-webui'),
     RunOnce('Navigation', 'python3 NewNavigationProcess.py'),
     RunOnce('Simulator', 'python3 Simulator.py'),
 ]

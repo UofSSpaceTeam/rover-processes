@@ -16,10 +16,10 @@ class GPSPosition:
         hav = lambda z: (1 - cos(z)) / 2   # haversine
         ahav = lambda z: 2 * asin(sqrt(z)) # inverse haversine
 
-        d_lat = them.lat - self.lat
-        d_lon = them.lon - self.lon
+        d_lat = radians(them.lat - self.lat)
+        d_lon = radians(them.lon - self.lon)
 
-        z = (hav(d_lat) + cos(self.lat) * cos(them.lat) * hav(d_lon))
+        z = (hav(d_lat) + cos(radians(self.lat)) * cos(radians(them.lat)) * hav(d_lon))
 
         return GPSPosition.RADIUS * ahav(z)
 
