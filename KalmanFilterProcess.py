@@ -155,7 +155,7 @@ def start_up_kalman_filter():
 
 @KalmanFilter.on('*/Acceleration')
 async def update_accel(event, data):
-    print(data)
+    # print(data)
     KalmanFilter.storage.u = data
 
 
@@ -182,8 +182,8 @@ async def kalman_filter(event, data):
     true_gps = utm.to_latlon(x_cc[0, 0], x_cc[1, 0], zone_info[0], zone_info[1], strict=False)  # this has the value we
     cart_pos_final = [x_cc[0,0], x_cc[1,0]]
 
-    print('raw: {}'.format(data))
-    print("                                             filtered: {}".format(true_gps))
+    # print('raw: {}'.format(data))
+    # print("                                             filtered: {}".format(true_gps))
 
     ''' pres = 0.00001
     dif_lat = abs(true_gps[0] - 52.132653)
@@ -203,11 +203,6 @@ async def kalman_filter(event, data):
 try:
     KalmanFilter.start()
     KalmanFilter.wait()
-    for i in range(0,350):
-        print("{},{}".format(KalmanFilter.storage.filtered_x[i], KalmanFilter.storage.filtered_y[i]))
-    print("New Data\n\n")
-    for i in range(0,350):
-        print("{},{}".format(KalmanFilter.storage.noise_x[i], KalmanFilter.storage.noise_y[i]))
 
 except KeyboardInterrupt:
     KalmanFilter.stop()

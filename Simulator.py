@@ -68,10 +68,10 @@ DELTA_T = 0.1
 async def update():
     simDevice.storage.rover.update(DELTA_T)
     # simDevice.storage.rover.wheelspeed = [x+0.1 for x in simDevice.storage.rover.wheelspeed]
-    print('position', simDevice.storage.rover.position)
-    print('wheel speed', simDevice.storage.rover.wheelspeed)
-    print('heading', simDevice.storage.rover.heading)
-    print('accleration', simDevice.storage.rover.acceleration)
+    # print('position', simDevice.storage.rover.position)
+    # print('wheel speed', simDevice.storage.rover.wheelspeed)
+    # print('heading', simDevice.storage.rover.heading)
+    # print('accleration', simDevice.storage.rover.acceleration)
 
 @simDevice.every(DELTA_T)
 async def publish_state():
@@ -79,7 +79,8 @@ async def publish_state():
     pos_list = [position.lat, position.lon]
     noisy_pos = simulate_piksi(position)
     # print(noisy_pos)
-    await simDevice.publish("GPSPosition", pos_list)
+    # await simDevice.publish("GPSPosition", pos_list)
+    await simDevice.publish("singlePointGPS", noisy_pos)
     accel = simDevice.storage.rover.acceleration
     accel = simulate_bno(accel)
     # print(accel)

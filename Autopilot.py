@@ -7,12 +7,12 @@ Autopilot = Device('Autopilot', 'rover')
 LOOP_PERIOD = 0.1
 MIN_WHEEL_RPM = 1000
 BEARING_THRESH = 5 # degrees
-GPS_DISTANCE_THRESH = 10 # meters
+GPS_DISTANCE_THRESH = 5 # meters
 
 ###### Initialization ########
 
 Autopilot.storage.state = None
-Autopilot.storage.enabled = True
+Autopilot.storage.enabled = False
 Autopilot.storage.waypoints = []
 
 
