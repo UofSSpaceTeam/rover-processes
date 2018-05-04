@@ -46,7 +46,9 @@ def handle_vesc_message(vesc_message, path):
         sub = manager.storage.sub_map[path]
         @manager.task
         async def pub_message():
-            await manager.publish(sub, vesc_to_dict(vesc_message))
+            msg = vesc_to_dict(vesc_message)
+            key = list(msg.keys())[0]
+            await manager.publish(sub + '/' + key, msg[key])
 
 def get_subscribers():
     PortList = serial.tools.list_ports.comports()
