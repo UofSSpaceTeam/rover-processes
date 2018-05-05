@@ -26,6 +26,7 @@ NavDevice.storage.waypoints = [(52.132866, -106.628012)]
 
 @NavDevice.on('*/FilteredGPS')
 @NavDevice.on('*/GPSPosition')
+# @NavDevice.on('*/singlePointGPS')
 def udpate_position(event, data):
     NavDevice.storage.rover.position = GPSPosition(*data)
 

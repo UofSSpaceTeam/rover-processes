@@ -4,15 +4,15 @@ import time
 
 process_list = [
     # RunOnce('USBManager', 'python3 USBmanager.py'),
-    # RunOnce('Printer', 'python3 Printer.py'),
-    # RunOnce('GPSDriver', 'python3 GPSdriver.py'),
-    RunOnce('DriveControl', 'python3 DriveProcess.py'),
+    RunOnce('Printer', 'python3 Printer.py'),
+    RunOnce('GPSDriver', 'python3 GPSdriver.py'),
+    # RunOnce('DriveControl', 'python3 DriveProcess.py'),
     # RunOnce('Joystick', 'python3 JoystickProcess.py'),
     # RunOnce('KalmanFilter', 'python3 KalmanFilterProcess.py'),
-    RunOnce('Autopilot', 'python3 Autopilot.py'),
+    # RunOnce('Autopilot', 'python3 Autopilot.py'),
     RunOnce('WebUI', 'python3 server.py', cwd='rover-webui'),
     RunOnce('Navigation', 'python3 NewNavigationProcess.py'),
-    RunOnce('Simulator', 'python3 Simulator.py'),
+    # RunOnce('Simulator', 'python3 Simulator.py'),
 ]
 
 
