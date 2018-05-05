@@ -8,7 +8,7 @@ process_list = [
     # RunOnce('GPSDriver', 'python3 GPSdriver.py'),
     RunOnce('DriveControl', 'python3 DriveProcess.py'),
     # RunOnce('Joystick', 'python3 JoystickProcess.py'),
-    # RunOnce('KalmanFilter', 'python3 KalmanFilterProcess.py'),
+    RunOnce('KalmanFilter', 'python3 KalmanFilterProcess.py'),
     RunOnce('Autopilot', 'python3 Autopilot.py'),
     RunOnce('WebUI', 'python3 server.py', cwd='rover-webui'),
     RunOnce('Navigation', 'python3 NewNavigationProcess.py'),

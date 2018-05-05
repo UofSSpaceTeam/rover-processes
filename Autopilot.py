@@ -13,7 +13,7 @@ GPS_DISTANCE_THRESH = 5 # meters
 ###### Initialization ########
 
 Autopilot.storage.state = None
-Autopilot.storage.enabled = True
+Autopilot.storage.enabled = False
 Autopilot.storage.waypoints = []
 
 

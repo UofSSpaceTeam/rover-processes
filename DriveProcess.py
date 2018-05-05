@@ -18,6 +18,7 @@ MIN_CURRENT = 0.1
 CURVE_VAL = 17
 
 WHEEL_RADIUS = 0.26 # meters
+ROVER_WIDTH = 1.16 # meters
 
 def rpm_curve(f):
     if f > 0:
@@ -143,12 +144,16 @@ async def Rtrigger_callback(Rtrigger, trigger):
 #### Drive API #####
 async def setLeftWheelSpeed(rpm):
     rpm = rpm*RPM_TO_ERPM
+    rpm = min(rpm, MAX_RPM)
+    print(rpm)
     await DriveDevice.publish("wheelLF", {'SetRPM':rpm})
     await DriveDevice.publish("wheelLM", {'SetRPM':rpm})
     await DriveDevice.publish("wheelLB", {'SetRPM':rpm})
 
 async def setRightWheelSpeed(rpm):
     rpm = rpm*RPM_TO_ERPM
+    rpm = min(rpm, MAX_RPM)
+    print(rpm)
     await DriveDevice.publish("wheelRF", {'SetRPM':rpm})
     await DriveDevice.publish("wheelRM", {'SetRPM':rpm})
     await DriveDevice.publish("wheelRB", {'SetRPM':rpm})
@@ -160,25 +165,25 @@ async def DriveStop_callback(event, data):
 
 @DriveDevice.on('DriveForward')
 async def DriveForward_callback(DriveForward, speed):
-    rpm = speed/WHEEL_RADIUS
+    rpm = speed*60/WHEEL_RADIUS
     await setLeftWheelSpeed(rpm)
     await setRightWheelSpeed(rpm)
 
 @DriveDevice.on('DriveBackward')
 async def DriveBackward_callback(DriveBackward, speed):
-    rpm = -speed/WHEEL_RADIUS
+    rpm = -speed*60/WHEEL_RADIUS
     await setLeftWheelSpeed(rpm)
     await setRightWheelSpeed(rpm)
 
 @DriveDevice.on('RotateRight')
 async def DriveRotateRight_callback(DriveRotateRight, speed):
-    rpm = speed/WHEEL_RADIUS
+    rpm = speed*60/WHEEL_RADIUS
     await setLeftWheelSpeed(rpm)
     await setRightWheelSpeed(-rpm)
 
 @DriveDevice.on('RotateLeft')
 async def DriveRotateLeft_callback(DriveRotateLeft, speed):
-    rpm = speed/WHEEL_RADIUS
+    rpm = speed*60/WHEEL_RADIUS
     await setLeftWheelSpeed(-rpm)
     await setRightWheelSpeed(rpm)
 

@@ -90,11 +90,11 @@ async def publish_state():
 
 @simDevice.on('*/wheelLF')
 def update_wheel_l(event, data):
-    simDevice.storage.rover.wheelspeed[0] = data['SetRPM']/(12*19)
+    simDevice.storage.rover.wheelspeed[0] = data['SetRPM']/(12*19*60)
 
 @simDevice.on('*/wheelRF')
 def update_wheel_l(event, data):
-    simDevice.storage.rover.wheelspeed[1] = data['SetRPM']/(12*19)
+    simDevice.storage.rover.wheelspeed[1] = data['SetRPM']/(12*19*60)
 
 
 
