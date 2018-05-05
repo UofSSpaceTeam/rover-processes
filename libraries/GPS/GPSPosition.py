@@ -25,12 +25,12 @@ class GPSPosition:
 
     def bearing(self, them):
         ''' Returns the bearing to another GPSPositions on earth in degrees'''
-        d_lat = them.lat - self.lat
-        d_lon = them.lon - self.lon
+        d_lat = radians(them.lat - self.lat)
+        d_lon = radians(them.lon - self.lon)
 
-        y = sin(d_lon) * cos(them.lat)
-        x = (cos(self.lat) * sin(them.lat)
-                        - sin(self.lat) * cos(them.lat) * cos(d_lat))
+        y = sin(d_lon) * cos(radians(them.lat))
+        x = (cos(radians(self.lat)) * sin(radians(them.lat))
+                        - sin(radians(self.lat)) * cos(radians(them.lat)) * cos(d_lat))
 
         return math.degrees(atan2(y, x))
 

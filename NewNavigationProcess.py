@@ -22,7 +22,8 @@ class Rover:
 NavDevice = Device('Navigation', 'rover')
 
 NavDevice.storage.rover = Rover()
-NavDevice.storage.waypoints = [(52.132866, -106.628012)]
+# NavDevice.storage.waypoints = [(52.132866, -106.628012)]
+NavDevice.storage.waypoints = [(52.133066, -106.626507)]
 
 @NavDevice.on('*/FilteredGPS')
 @NavDevice.on('*/GPSPosition')

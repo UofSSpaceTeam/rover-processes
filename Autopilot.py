@@ -13,7 +13,7 @@ GPS_DISTANCE_THRESH = 5 # meters
 ###### Initialization ########
 
 Autopilot.storage.state = None
-Autopilot.storage.enabled = False
+Autopilot.storage.enabled = True
 Autopilot.storage.waypoints = []
 
 
@@ -37,10 +37,16 @@ async def drive_to_target():
         if len(Autopilot.storage.waypoints) > 0:
             # Make sure we're pointed in the right direction
             bearing = await Autopilot.request('Navigation', 'bearing', position, waypoints[0])
+            bearing = bearing%360
             heading = await Autopilot.request('Navigation', 'RoverHeading')
-            if abs(bearing - heading) > BEARING_THRESH: # TODO, math is wrong
-                # TODO: Rotate to position
-                pass
+            a = bearing - heading
+            a = (a+180)%360 - 180 # find smallest angle difference
+            if abs(a) > BEARING_THRESH:
+                if a >= 0: # Turn right
+                    await Autopilot.send('DriveSystem', 'RotateRight', MAX_SPEED/60)
+                else: # Turn left
+                    await Autopilot.send('DriveSystem', 'RotateLeft', MAX_SPEED/60)
+                return
             distance = await Autopilot.request('Navigation', 'distance', position, waypoints[0])
             print("distance from {} to {} = {}".format(position, waypoints[0], distance))
             if distance > GPS_DISTANCE_THRESH:

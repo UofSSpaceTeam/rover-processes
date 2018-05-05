@@ -37,7 +37,8 @@ class Rover:
                              n_velocity[1]-self.velocity[1]]
 
         self.position = n_gps
-        self.heading = -math.degrees(next_pose[2] - math.pi/2)
+        self.heading = -math.degrees(next_pose[2] - math.pi/2)%360
+
 
         self.prev_wheelspeed = self.wheelspeed
         self.velocity = n_velocity

@@ -170,13 +170,13 @@ async def DriveBackward_callback(DriveBackward, speed):
     await setLeftWheelSpeed(rpm)
     await setRightWheelSpeed(rpm)
 
-@DriveDevice.on('DriveRotateRight')
+@DriveDevice.on('RotateRight')
 async def DriveRotateRight_callback(DriveRotateRight, speed):
     rpm = speed/WHEEL_RADIUS
     await setLeftWheelSpeed(rpm)
     await setRightWheelSpeed(-rpm)
 
-@DriveDevice.on('DriveRotateLeft')
+@DriveDevice.on('RotateLeft')
 async def DriveRotateLeft_callback(DriveRotateLeft, speed):
     rpm = speed/WHEEL_RADIUS
     await setLeftWheelSpeed(-rpm)
