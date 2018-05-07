@@ -5,10 +5,11 @@ from robocluster import Device
 import random as random
 import matplotlib.pyplot as plt
 import time
+from roverutil import getnetwork
 
-KalmanFilter = Device('KalmanFilter', 'rover')
+KalmanFilter = Device('KalmanFilter', 'rover', network=getnetwork())
 
-DummyGPS = Device('DummyGPS', 'rover')
+DummyGPS = Device('DummyGPS', 'rover', network=getnetwork())
 # @DummyGPS.every('0.1s')
 async def dummy():
     #await DummyGPS.publish('singlePointGPS', [51.00000+(random.randrange(400, 600)/1000000), 110.00000+(random.randrange(600, 800)/1000000)])

@@ -2,7 +2,9 @@ import math
 
 from robocluster import Device
 
-Autopilot = Device('Autopilot', 'rover')
+from roverutil import getnetwork
+
+Autopilot = Device('Autopilot', 'rover', network=getnetwork())
 
 LOOP_PERIOD = 0.1
 MIN_WHEEL_RPM = 1000

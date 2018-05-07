@@ -6,6 +6,8 @@ from robocluster import Device
 from libraries.GPS.GPSPosition import GPSPosition
 from libraries.differential_drive import diff_drive_fk
 
+from roverutil import getnetwork
+
 class Rover:
 
     def __init__(self):
@@ -57,7 +59,7 @@ def simulate_bno(accel):
     return [random.gauss(accel[0], stddev_x),
             random.gauss(accel[1], stddev_y)]
 
-simDevice = Device('simDevice', 'rover')
+simDevice = Device('simDevice', 'rover', network=getnetwork())
 
 # Rover parameters
 simDevice.storage.rover = Rover()

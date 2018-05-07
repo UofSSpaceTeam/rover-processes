@@ -7,11 +7,12 @@ from robocluster import Device
 import pyvesc
 
 from VESCdriver import VESCDriver
+from roverutil import getnetwork
 
-IGNORE_LIST = ['/dev/ttyS0', '/dev/ttyAMA0']
+IGNORE_LIST = ['/dev/ttyS0', '/dev/ttyAMA0', '/dev/ttyUSB0']
 
 
-manager = Device('USBManager', 'rover')
+manager = Device('USBManager', 'rover', network=getnetwork())
 manager.storage.drivers = {}
 manager.storage.sub_map = {}
 
