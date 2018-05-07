@@ -11,7 +11,7 @@ RPM_TO_ERPM = 12*19 # 12 poles, 19:1 gearbox
 # speed at which the motor is commutated.
 
 DEADZONE = 0.1
-MAX_RPM = 40000/2
+MAX_RPM = 40000/4
 MIN_RPM = 300
 MAX_CURRENT = 6
 MIN_CURRENT = 0.1
@@ -19,6 +19,16 @@ CURVE_VAL = 17
 
 WHEEL_RADIUS = 0.26 # meters
 ROVER_WIDTH = 1.16 # meters
+
+# Modify the direction of the wheels to account for backwards wiring.
+DirectionConstants = {
+    'wheelRF':1,
+    'wheelRM':1,
+    'wheelRB':1,
+    'wheelLF':1,
+    'wheelLM':1,
+    'wheelLB':1,
+}
 
 def rpm_curve(f):
     if f > 0:
@@ -85,9 +95,9 @@ async def joystick1_callback(joystick1, data):
             speed = austin_rpm_curve(y_axis)
             if -DEADZONE < y_axis < DEADZONE: # DEADZONE
                     speed = 0
-            await DriveDevice.publish('wheelLF', {'SetRPM':int(speed)})
-            await DriveDevice.publish('wheelLM', {'SetRPM':int(speed)})
-            await DriveDevice.publish('wheelLB', {'SetRPM':int(speed)})
+            await DriveDevice.publish('wheelLF', {'SetRPM':DirectionConstants['wheelLF']*int(speed)})
+            await DriveDevice.publish('wheelLM', {'SetRPM':DirectionConstants['wheelLM']*int(speed)})
+            await DriveDevice.publish('wheelLB', {'SetRPM':DirectionConstants['wheelLB']*int(speed)})
     elif DriveDevice.storage.drive_mode == "current" and not DriveDevice.storage.left_brake:
             current = austin_current_curve(y_axis)
             await DriveDevice.publish("wheelLF", {'SetCurrent':current})
@@ -107,9 +117,9 @@ async def joystick2_callback(joystick2, data):
             speed = austin_rpm_curve(y_axis)
             if -DEADZONE < y_axis < DEADZONE: # DEADZONE
                     speed = 0
-            await DriveDevice.publish("wheelRF", {'SetRPM':int(speed)})
-            await DriveDevice.publish("wheelRM", {'SetRPM':int(speed)})
-            await DriveDevice.publish("wheelRB", {'SetRPM':int(speed)})
+            await DriveDevice.publish("wheelRF", {'SetRPM':DirectionConstants['wheelRF']*int(speed)})
+            await DriveDevice.publish("wheelRM", {'SetRPM':DirectionConstants['wheelRM']*int(speed)})
+            await DriveDevice.publish("wheelRB", {'SetRPM':DirectionConstants['wheelRB']*int(speed)})
     elif DriveDevice.storage.drive_mode == "current" and not DriveDevice.storage.right_brake:
             current = austin_current_curve(y_axis)
             #if -MIN_CURRENT < current < MIN_CURRENT:
@@ -146,17 +156,17 @@ async def setLeftWheelSpeed(rpm):
     rpm = rpm*RPM_TO_ERPM
     rpm = min(rpm, MAX_RPM)
     print(rpm)
-    await DriveDevice.publish("wheelLF", {'SetRPM':rpm})
-    await DriveDevice.publish("wheelLM", {'SetRPM':rpm})
-    await DriveDevice.publish("wheelLB", {'SetRPM':rpm})
+    await DriveDevice.publish("wheelLF", {'SetRPM':DirectionConstants['wheelLF']*rpm})
+    await DriveDevice.publish("wheelLM", {'SetRPM':DirectionConstants['wheelLM']*rpm})
+    await DriveDevice.publish("wheelLB", {'SetRPM':DirectionConstants['wheelLB']*rpm})
 
 async def setRightWheelSpeed(rpm):
     rpm = rpm*RPM_TO_ERPM
     rpm = min(rpm, MAX_RPM)
     print(rpm)
-    await DriveDevice.publish("wheelRF", {'SetRPM':rpm})
-    await DriveDevice.publish("wheelRM", {'SetRPM':rpm})
-    await DriveDevice.publish("wheelRB", {'SetRPM':rpm})
+    await DriveDevice.publish("wheelRF", {'SetRPM':DirectionConstants['wheelRF']*rpm})
+    await DriveDevice.publish("wheelRM", {'SetRPM':DirectionConstants['wheelRM']*rpm})
+    await DriveDevice.publish("wheelRB", {'SetRPM':DirectionConstants['wheelRB']*rpm})
 
 @DriveDevice.on('Stop')
 async def DriveStop_callback(event, data):

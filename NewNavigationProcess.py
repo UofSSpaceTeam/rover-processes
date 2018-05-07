@@ -17,13 +17,15 @@ class Rover:
         self.position = GPSPosition(0, 0)
         self.heading = 0
         self.wheel_speed = [0, 0]
+        self.pitch = 0
+        self.roll = 0
 
 
 NavDevice = Device('Navigation', 'rover')
 
 NavDevice.storage.rover = Rover()
 # NavDevice.storage.waypoints = [(52.132866, -106.628012)]
-NavDevice.storage.waypoints = [(52.133066, -106.626507)]
+NavDevice.storage.waypoints = [(52.132774, -106.627528)]
 
 @NavDevice.on('*/FilteredGPS')
 @NavDevice.on('*/GPSPosition')
@@ -35,10 +37,21 @@ def udpate_position(event, data):
 def update_heading(event, data):
     NavDevice.storage.rover.heading = data
 
+@NavDevice.on('*/CompassDataMessage')
+def compas_callback(event, data):
+    NavDevice.storage.rover.heading = data['heading']+10.26667 #magnetic declination offset 10.58333 for Hanksville
+    NavDevice.storage.rover.pitch = data['pitch']
+    NavDevice.storage.rover.roll = data['roll']
+
+@NavDevice.on('*/AccelerometerMessage')
+async def accelerometer_callback(event, data):
+    await NavDevice.publish('Acceleration', [data['x'], -data['y']])
+
 @NavDevice.on_request('RoverPosition')
 def return_position():
     pos = NavDevice.storage.rover.position
     return [pos.lat, pos.lon]
+
 
 @NavDevice.on_request('RoverHeading')
 def return_heading():
