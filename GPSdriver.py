@@ -8,6 +8,8 @@ from robocluster import Device
 
 from libraries.GPS.Piksi import Piksi
 
+from roverutil import getnetwork
+
 ## Global Variables
 LOOP_PERIOD = 0.1 # How often we pusblish positions
 
@@ -64,7 +66,7 @@ class GPSPosition:
         return GPSPosition(math.degrees(target_lat), math.degrees(target_lon))
 
 
-GPSdevice = Device('GPSdevice', 'rover')
+GPSdevice = Device('GPSdevice', 'rover', network=getnetwork())
 
 #@GPSdevice.every('1s')
 async def dummy():

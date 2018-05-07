@@ -4,6 +4,8 @@ from math import expm1 # e**x - 1  for rpm/current curves
 from math import exp
 from robocluster import Device
 
+from roverutil import getnetwork
+
 RPM_TO_ERPM = 12*19 # 12 poles, 19:1 gearbox
 
 # Limits for Electronic RPM.
@@ -64,7 +66,7 @@ def austin_current_curve(f):
         return -a*MAX_CURRENT*100
 
 
-DriveDevice = Device('DriveSystem', 'rover')
+DriveDevice = Device('DriveSystem', 'rover', network=getnetwork())
 
 # Initialize setup variables
 DriveDevice.storage.right_brake = False
