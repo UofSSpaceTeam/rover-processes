@@ -58,6 +58,7 @@ async def drive_to_target():
                 # We are close enough TODO: search for ball
                 Autopilot.storage.enabled = False
                 await Autopilot.publish("Autopilot", False)  # update WebUI
+                await Autopilot.publish("TargetReached", True)
                 Autopilot.storage.state = waiting
     else:
         Autopilot.storage.state = waiting
@@ -78,19 +79,11 @@ async def state_machine():
 
 
 ######## Callbacks ###########
-@Autopilot.on('*/roverHeading')
-def update_heading(event, data):
-    Autopilot.storage.heading = data
-
-@Autopilot.on('*/GPSPosition')
-def update_position(event, data):
-    Autopilot.storage.position = data
 
 @Autopilot.on('*/Autopilot')
 def enable_autopilot(event, data):
+    print('Setting Autopilot to {}'.format(data))
     Autopilot.storage.enabled = data
-
-
 
 Autopilot.start()
 Autopilot.wait()
