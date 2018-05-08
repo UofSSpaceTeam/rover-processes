@@ -102,8 +102,8 @@ async def loop():
                     await GPSdevice.publish("GPSVelocity", [msg.n/1000, msg.e/1000])
             await GPSdevice.sleep(LOOP_PERIOD)
 
-if len(sys.argv) == 2:
-    SERIAL = sys.argv[2]
+if len(sys.argv) == 3:
+    SERIAL = sys.argv[3]
 else:
     print('Usage: GPSdriver.py <path-to-piksi>')
     print('Using default /dev/ttyUSB0')
