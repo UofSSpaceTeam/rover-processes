@@ -86,10 +86,10 @@ def create_initial_state_vector(num_dimensions, initial_conditions=0):
             x_pp[index, 0] = initial_conditions[index]
     return x_pp
 
-def create_control_inputs_vector(ax, ay):
+def create_control_inputs_vector(ax = 0, ay = 0):
     # takes accelerometer data and turns it into acceleration in northing easting and then creates a vector
-    #u = np.array([[ax],[ay]])
-    u = np.zeros((2, 1))  # TODO: actually calculate acceleration in northing easting and create vector
+    u = np.array([[ax],[ay]])
+    #u = np.zeros((2, 1))  # TODO: actually calculate acceleration in northing easting and create vector
     return u
 
 def predict(F, x_pp, B, u, P_pp, Q):
