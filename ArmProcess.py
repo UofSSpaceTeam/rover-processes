@@ -153,114 +153,115 @@ class ArmProcess(RoverProcess):
 				ser.write(pyvesc.encode(SetDutyCycle(int(100000*self.speeds[5]))))
 
 	@Arm.on('*/joystick1') 
-	async def on_joystick1(self, data): ''' Shoulder joint, and radius control.'''
+	async def on_joystick1(event, data): ''' Shoulder joint, and radius control.'''
 		#self.log("joystick1:{}".format(data), "DEBUG")
 		y_axis = data[1]
-		if isinstance(self.mode, ManualControl):
+		if isinstance(event.mode, ManualControl):
 			y_axis *= -1*shoulder_max_speed
 			if y_axis > shoulder_min_speed or y_axis < -shoulder_min_speed:
 				armShoulderSpeed = y_axis
 			else:
 				armShoulderSpeed = 0
-			self.command[1] = armShoulderSpeed
-		elif isinstance(self.mode, PlanarControl):
+			event.command[1] = armShoulderSpeed
+		elif isinstance(event.mode, PlanarControl):
 			y_axis = (y_axis * radius_max_speed)
 			if y_axis > radius_min_speed or y_axis < -radius_min_speed:
 				radius_speed = y_axis
 			else:
 				radius_speed = 0
-			self.command[0] = radius_speed
+			event.command[0] = radius_speed
+
 	@Arm.on('*/joystick2')
-	async def on_joystick2(self, data):
+	async def on_joystick2(event, data):
 		''' Elbow joints and z/height control'''
 		#self.log("joystick2:{}".format(data), "DEBUG")
 		y_axis = data[1]
-		if isinstance(self.mode, ManualControl):
+		if isinstance(event.mode, ManualControl):
 			y_axis *= elbow_max_speed
 			if y_axis > elbow_min_speed or y_axis < -elbow_min_speed:
 				armY_ElbowSpeed = y_axis
 			else:
 				armY_ElbowSpeed = 0
-			self.command[2] = armY_ElbowSpeed
-		elif isinstance(self.mode, PlanarControl):
+			event.command[2] = armY_ElbowSpeed
+		elif isinstance(event.mode, PlanarControl):
 			y_axis = (y_axis * height_max_speed)
 			if y_axis > height_min_speed or y_axis < -height_min_speed:
 				height_speed = y_axis
 			else:
 				height_speed = 0
-			self.command[1] = height_speed
+			event.command[1] = height_speed
 	@Arm.on('*/dpad')
-	async def on_dpad(self, data):
+	async def on_dpad(event, data):
 		x_axis = data[0]
 		y_axis = data[1]
-		self.command[3] = y_axis*wrist_pitch_speed
-		self.command[4] = x_axis*gripper_rotation_speed
+		event.command[3] = y_axis*wrist_pitch_speed
+		event.command[4] = x_axis*gripper_rotation_speed
 
 	@Arm.on('*/triggerR')
-	async def on_triggerR(self, trigger):
+	async def on_triggerR(event, trigger):
 		''' Base rotation right'''
 		#self.log("triggerR:{}".format(trigger), "DEBUG")
 		trigger = (trigger + 1)/2
 		armBaseSpeed = trigger * base_max_speed/2
-		if self.base_direction is "left" or self.base_direction is None:
+		if event.base_direction is "left" or event.base_direction is None:
 			if -base_min_speed <armBaseSpeed < base_min_speed:
 				armBaseSpeed = 0
-				self.base_direction = None
+				event.base_direction = None
 			else:
-				self.base_direction = "left"
-			if isinstance(self.mode, ManualControl):
-				self.command[0] = armBaseSpeed
-			elif isinstance(self.mode, PlanarControl):
-				self.command[2] = armBaseSpeed
+				event.base_direction = "left"
+			if isinstance(event.mode, ManualControl):
+				event.command[0] = armBaseSpeed
+			elif isinstance(event.mode, PlanarControl):
+				event.command[2] = armBaseSpeed
 
 
 	@Arm.on(triggerL)
-	async def on_triggerL(self, trigger):
+	async def on_triggerL(event, trigger):
 		''' Base rotation left'''
 		#self.log("triggerL:{}".format(trigger), "DEBUG")
 		trigger = -1*(trigger + 1)/2
 		armBaseSpeed = trigger * base_max_speed/2
-		if self.base_direction is "right" or self.base_direction is None:
+		if event.base_direction is "right" or event.base_direction is None:
 			if -base_min_speed <armBaseSpeed < base_min_speed:
 				armBaseSpeed = 0
-				self.base_direction = None
+				event.base_direction = None
 			else:
-				self.base_direction = "right"
-			if isinstance(self.mode, ManualControl):
-				self.command[0] = armBaseSpeed
-			elif isinstance(self.mode, PlanarControl):
-				self.command[2] = armBaseSpeed
+				event.base_direction = "right"
+			if isinstance(event.mode, ManualControl):
+				event.command[0] = armBaseSpeed
+			elif isinstance(event.mode, PlanarControl):
+				event.command[2] = armBaseSpeed
 	@Arm.on('*/buttonB_down')
-	async def on_buttonB_down(self, data):
-		if isinstance(self.mode, ManualControl):
-			self.mode = PlanarControl()
-			self.log("PlanarControl")
+	async def on_buttonB_down(event, data):
+		if isinstance(event.mode, ManualControl):
+			event.mode = PlanarControl()
+			event.log("PlanarControl")
 		else:
-			self.mode = ManualControl()
-			self.log("ManualControl")
+			event.mode = ManualControl()
+			event.log("ManualControl")
 	@Arm.on('buttonA_down')
-	async def on_buttonA_down(self, data):
-		self.log("gripper close:{}".format(data), "DEBUG")
-		self.command[5] = gripper_open_speed
+	async def on_buttonA_down(event, data):
+		event.log("gripper close:{}".format(data), "DEBUG")
+		event.command[5] = gripper_open_speed
 
 	@Arm.on('buttonA_up')
-	async def on_buttonA_up(self,data):
-		self.log("gripper close stop:{}".format(data), "DEBUG")
-		self.command[5] = 0
+	async def on_buttonA_up(event,data):
+		event.log("gripper close stop:{}".format(data), "DEBUG")
+		event.command[5] = 0
 
 	@Arm.on('buttonY_up')
-	async def on_buttonY_up(self,data):
-		self.log("gripper open stop:{}".format(data), "DEBUG")
-		self.command[5] = 0
+	async def on_buttonY_up(event,data):
+		event.log("gripper open stop:{}".format(data), "DEBUG")
+		event.command[5] = 0
 
 	@Arm.on('buttonY_down')
-	async def on_buttonY_down(self, data):
-		self.log("gripper open:{}".format(data), "DEBUG")
-		self.command[5] = -gripper_open_speed
+	async def on_buttonY_down(event, data):
+		event.log("gripper open:{}".format(data), "DEBUG")
+		event.command[5] = -gripper_open_speed
 
-	def messageTrigger(self, message):
+	def messageTrigger(event, message):
 		if message.key in device_keys:
-			self.log("Received device: {} at {}".format(message.key, message.data), "DEBUG")
+			event.log("Received device: {} at {}".format(message.key, message.data), "DEBUG")
 			self.devices[message.key] = message.data
 			with serial.Serial(message.data, baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
 				# Turn on encoder readings for this VESC
