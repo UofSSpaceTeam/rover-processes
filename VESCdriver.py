@@ -44,6 +44,11 @@ class VESCDriver:
         b = pyvesc.encode(vesc_message)
         self.ser.write(b)
 
+    def write_request(self, vesc_message):
+        b =pyvesc.encode_request(vesc_message)
+        self.ser.write(b)
+
+
     def read(self):
         '''Read a pyvesc VESC message from the device'''
         # from Roveberrypy
@@ -70,11 +75,18 @@ class VESCDriver:
             self.reader_thread = None
 
 
-    def stop(self):
+    def stop(self, timeout=0.1):
         '''If a reader thread is running, shut it down.'''
         if self.reader_thread:
             self.reader_thread.exit = True
-            self.reader_thread.join(0.1)
+            self.reader_thread.join(timeout)
+
+    def start(self):
+        if self.reader_thread:
+            try:
+                self.reader_thread.start()
+            except RuntimeError:
+                pass # thread already started
 
 def test_driver():
     def callback(vesc_message):

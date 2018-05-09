@@ -1,12 +1,14 @@
-from robocluster_manager.ProcessManager import ProcessManager, RunOnce
+from robocluster.manager.ProcessManager import ProcessManager, RunOnce
+import time
 
 
 process_list = [
     RunOnce('USBManager', 'python3 USBmanager.py'),
-     RunOnce('Printer', 'python3 Printer.py'),
+    RunOnce('Printer', 'python3 Printer.py'),
     # RunOnce('GPSDriver', 'python3 GPSdriver.py'),
-    RunOnce('DriveControl', 'python3 DriveProcess.py'),
-    RunOnce('Joystick', 'python3 JoystickProcess.py'),
+    # RunOnce('DriveControl', 'python3 DriveProcess.py'),
+    # RunOnce('Joystick', 'python3 JoystickProcess.py'),
+    RunOnce('getter', 'python3 usb_req_example.py'),
 
 ]
 
@@ -21,6 +23,7 @@ with ProcessManager() as manager:
 
     try:
         # Run asyncio event loop
-        manager.run()
+        while True:
+            time.sleep(1)
     except KeyboardInterrupt:
         pass # exit cleanly
