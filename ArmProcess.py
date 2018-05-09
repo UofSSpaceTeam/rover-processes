@@ -51,9 +51,9 @@ Arm.storage.base_direction = None
 Arm.storage.joints_pos = None
 Arm.storage.speeds = None
 Arm.storage.command = None
-Arm.storage.section_lengths = None #Not actually from 'self'
-Arm.storage.joint_limits = None
-Arm.storage.max_angular_velocity = None
+Arm.storage.section_lengths = None #Not actually from self 
+Arm.storage.joint_limits = None # Also was not from self
+Arm.storage.max_angular_velocity = None #Again, not from self
 Arm.storage.config = None #May not need this one in storage.
 Arm.storage.controller = None #Ditto
 Arm.storage.mode = None #Ditto
@@ -140,17 +140,20 @@ class ArmProcess(RoverProcess):
 		# self.joint_offsets = {"d_armShoulder":0, "d_armElbow":0}
 
 
-	def simulate_positions(self):
+	def simulate_positions():
 		''' Updates the positions by calculating new values for testing.'''
-		new_joints = list(self.joints_pos)
-		for i in range(len(self.speeds)):
+		new_joints = list(Arm.storage.joints_pos)
+		for i in range(len(Arm.storage.speeds)):
 			if new_joints[i] is not None:
-				new_joints[i] = self.joints_pos[i] + self.speeds[i] * dt
+				new_joints[i] = Arm.storage.joints_pos[i] + 
+						Arm.storage.speeds[i] * dt
 		return Joints(*new_joints)
 
-	def poll_encoder(self, device):
+	def poll_encoder( device):
 		''' Polls each VESC for its encoder position.'''
-		with serial.Serial(self.devices[device], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
+		with serial.Serial(Arm.storeage.devices[device], 
+			baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
+
 			ser.write(pyvesc.encode_request(GetRotorPosition))
 			# while ser.in_waiting < 9:
 			# 	# Wait for response. TODO: Maybe don't wait forever...
@@ -161,53 +164,53 @@ class ArmProcess(RoverProcess):
 				if response.__class__ == GetRotorPosition:
 					return response.rotor_pos
 			except:
-				self.log("Failed to read rotor position {}".format(device), "ERROR")
+				print("Failed to read rotor position {}".format(device), "ERROR")
 		return None
 
-	def get_positions(self):
+	def get_positions():
 		''' Returns an updated Joints object with the current arm positions'''
-		new_joints = list(self.joints_pos)
+		new_joints = list(Arm.storage.joints_pos)
 		for i, device in enumerate(["d_armShoulder", "d_armElbow", "d_armWristPitch"]):
-			if device in self.devices:
-				reading = self.poll_encoder(device)
+			if device in Arm.storage.devices:
+				reading = Arm.storage.poll_encoder(device)
 				if reading is not None:
 					if device == "d_armShoulder" and reading < 180:
 						# The shoulder joint's magnet happens to be orientated
 						# that the encoder flips from 360 to 0 partway through
 						# the rotation.
 						reading += 360
-					reading += self.joint_offsets[device]
+					reading += Arm.storage.joint_offsets[device]
 					new_joints[i+1] = round(math.radians(reading), 3) #Convert to radians
 				else:
-					self.log("Could not read joint position {}".format(device), "WARNING")
+					print("Could not read joint position {}".format(device), "WARNING")
 		return Joints(*new_joints) def loop(self):
-		self.joints_pos = self.get_positions()
-		self.log("command: {}".format(self.command), "DEBUG")
-		self.controller.user_command(self.mode, *self.command)
-		self.speeds = self.controller.update_duties(self.joints_pos)
+		Arm.storage.joints_pos = get_positions()
+		print("command: {}".format(self.command), "DEBUG")
+		Arm.storage.controller.user_command(Arm.storage.mode, *Arm.storage.command)
+		Arm.storage.speeds = Arm.storage.controller.update_duties(Arm.storage.joints_pos)
 		#publish speeds/duty cycles here
-		self.log("joints_pos: {}".format(self.joints_pos), "DEBUG")
-		self.log("speeds: {}".format(self.speeds), "DEBUG")
-		self.send_duties()
+		Arm.storage.log("joints_pos: {}".format(Arm.storage.joints_pos), "DEBUG")
+		Arm.storage.log("speeds: {}".format(Arm.storage.speeds), "DEBUG")
+		send_duties() #This may have not work, used to have a self
 		time.sleep(dt)
 
-	def send_duties(self):
+	def send_duties():
 		''' Tell each motor controller to turn on motors'''
-		if "d_armBase" in self.devices:
-			with serial.Serial(self.devices["d_armBase"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-				ser.write(pyvesc.encode(SetDutyCycle(int(100000*self.speeds[0]))))
-		if "d_armShoulder" in self.devices:
-			with serial.Serial(self.devices["d_armShoulder"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
+		if "d_armBase" in Arm.storage.devices:
+			with serial.Serial(Arm.storage.devices["d_armBase"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
+				ser.write(pyvesc.encode(SetDutyCycle(int(100000*Arm.storage.speeds[0]))))
+		if "d_armShoulder" in Arm.storage.devices:
+			with serial.Serial(Arm.storage.devices["d_armShoulder"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
 				ser.write(pyvesc.encode(SetDutyCycle(int(100000*self.speeds[1]))))
 		if "d_armElbow" in self.devices:
-			with serial.Serial(self.devices["d_armElbow"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
+			with serial.Serial(Arm.storage.devices["d_armElbow"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
 				ser.write(pyvesc.encode(SetDutyCycle(int(100000*self.speeds[2]))))
-		if "d_armWristRot" in self.devices:
-			with serial.Serial(self.devices["d_armWristRot"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
+		if "d_armWristRot" in Arm.storage.devices:
+			with serial.Serial(Arm.storage.devices["d_armWristRot"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
 				ser.write(pyvesc.encode(SetDutyCycle(int(100000*self.speeds[4]))))
-		if "d_armGripperOpen" in self.devices:
-			with serial.Serial(self.devices["d_armGripperOpen"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-				ser.write(pyvesc.encode(SetDutyCycle(int(100000*self.speeds[5]))))
+		if "d_armGripperOpen" in Arm.storage.devices:
+			with serial.Serial(Arm.storage.devices["d_armGripperOpen"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
+				ser.write(pyvesc.encode(SetDutyCycle(int(100000*Arm.storage.speeds[5]))))
 
 	@Arm.on('*/joystick1') 
 	async def on_joystick1(event, data): ''' Shoulder joint, and radius control.'''
