@@ -21,6 +21,8 @@ import serial
 
 # Any libraries you need can be imported here. You almost always need time!
 import time
+from robocluster import Device
+
 
 base_max_speed = 3
 base_min_speed = 0.4
@@ -43,7 +45,62 @@ dt = 0.01
 BAUDRATE = 115200
 SERIAL_TIMEOUT = 0.02
 
+Arm = Device('Arm','rover')
 
+Arm.storage.base_direction = None
+Arm.storage.joints_pos = None
+Arm.storage.speeds = None
+Arm.storage.command = None
+Arm.storage.section_lengths = None #Not actually from 'self'
+Arm.storage.joint_limits = None
+Arm.storage.max_angular_velocity = None
+Arm.storage.config = None #May not need this one in storage.
+Arm.storage.controller = None #Ditto
+Arm.storage.mode = None #Ditto
+Arm.storage.devices = None #dytto
+Arm.storage.joint_offsets = None # D to I to T T O
+
+'''
+ setup()
+	:param: arm_storage - a device's storage, in this case, that of the arm.
+
+	:synopsis: Takes in a device's and initalizes all contained parameters
+		   to the values from the old class.
+'''
+def setup(arm_storage):
+	arm_storage.base_direction = None
+	arm_storage.joints_pos = Joints(0,0,pi/4,0,0,0)
+	arm_storage.speeds = Joints(0,0,0,0,0,0)
+	arm_storage.command = [0,0,0,0,0,0]
+	arm_storage.section_lengths = Sections(
+				upper_arm = 0.35,
+				forearm = 0.42,
+				end_effector = 0.1)
+	arm_storage.joint_limits = Joints(
+				base = None,
+				shoulder = Limits(-0.09, 0.721),
+				elbow = Limits(1.392,1.699),
+				wrist_pitch = None,
+				wrist_roll = None,
+				gripper = None)
+	arm_storage.max_angular_velocity = Joints(
+					base = 0.6,
+					shoulder = 0.4,
+					elbow = 0.4,
+					wrist_pitch = 0.4,
+					wrist_roll = 0.8,
+					gripper = 0.8)
+		arm_storage.config = Config(
+					arm_storage.section_lengths,
+					arm_storage.joint_limits,
+					arm_stoage.max_angular_velocity)
+		arm_storage.controller = Controller(arm_storage.config)
+		arm_stoarge.mode = ManualControl()
+		arm_storage.devices = {}
+		#joint_offesets are values in degrees to 'zero' the encoder angle
+		arm_storage.joint_offsets = {'d_armShoulder':-332.544,
+					     'd_armElbow':-221.505+90}
+	
 class ArmProcess(RoverProcess):
 
 	def setup(self, args):
