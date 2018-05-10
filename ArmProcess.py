@@ -101,44 +101,6 @@ def setup(arm_storage):
 		arm_storage.joint_offsets = {'d_armShoulder':-332.544,
 					     'd_armElbow':-221.505+90}
 	
-class ArmProcess(RoverProcess):
-
-	def setup(self, args):
-		for key in ["joystick1", "joystick2", "triggerR", "triggerL", "dpad", "buttonB_down","buttonA_down","buttonY_down", "buttonA_up","buttonY_up"]:
-			self.subscribe(key)
-		for key in device_keys:
-			self.subscribe(key)
-		self.base_direction = None
-		self.joints_pos = Joints(0, 0, pi/4, 0, 0, 0)
-		self.speeds = Joints(0,0,0,0,0,0)
-		self.command = [0,0,0,0,0,0]
-		section_lengths = Sections(
-				upper_arm=0.35,
-				forearm=0.42,
-				end_effector=0.1)
-		joint_limits = Joints(
-				# in radians
-				base=None,
-				shoulder=Limits(-0.09, 0.721),
-				elbow=Limits(1.392, 1.699),
-				wrist_pitch=None,
-				wrist_roll=None,
-				gripper=None)
-		max_angular_velocity = Joints(
-				base=0.6,
-				shoulder=0.4,
-				elbow=0.4,
-				wrist_pitch=0.4,
-				wrist_roll=0.8,
-				gripper=0.8)
-		self.config = Config(section_lengths, joint_limits, max_angular_velocity)
-		self.controller = Controller(self.config)
-		self.mode = ManualControl()
-		self.devices = {}
-		# joint_offsets are values in degrees to 'zero' the encoder angle
-		self.joint_offsets = {"d_armShoulder":-332.544, "d_armElbow":-221.505+90}
-		# self.joint_offsets = {"d_armShoulder":0, "d_armElbow":0}
-
 
 def simulate_positions():
 	''' Updates the positions by calculating new values for testing.'''
@@ -183,14 +145,18 @@ def get_positions():
 				new_joints[i+1] = round(math.radians(reading), 3) #Convert to radians
 			else:
 				print("Could not read joint position {}".format(device), "WARNING")
-	return Joints(*new_joints) def loop(self):
+	return Joints(*new_joints) 
+
+def loop():
 	Arm.storage.joints_pos = get_positions()
-	print("command: {}".format(self.command), "DEBUG")
-	Arm.storage.controller.user_command(Arm.storage.mode, *Arm.storage.command)
+	print("command: {}".format(Arm.storage.command), "DEBUG")
+	Arm.storage.controller.user_command(Arm.storage.mode, *Arm.storage.command) #Keep an eye on that pointer.
 	Arm.storage.speeds = Arm.storage.controller.update_duties(Arm.storage.joints_pos)
+	
 	#publish speeds/duty cycles here
 	print("joints_pos: {}".format(Arm.storage.joints_pos), "DEBUG")
 	print("speeds: {}".format(Arm.storage.speeds), "DEBUG")
+	
 	send_duties() #This may have not work, used to have a self
 	time.sleep(dt)
 
@@ -201,13 +167,13 @@ def send_duties():
 			ser.write(pyvesc.encode(SetDutyCycle(int(100000*Arm.storage.speeds[0]))))
 	if "d_armShoulder" in Arm.storage.devices:
 		with serial.Serial(Arm.storage.devices["d_armShoulder"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-			ser.write(pyvesc.encode(SetDutyCycle(int(100000*self.speeds[1]))))
-	if "d_armElbow" in self.devices:
+			ser.write(pyvesc.encode(SetDutyCycle(int(100000*Arm.storage.speeds[1]))))
+	if "d_armElbow" in Arm.storage.devices:
 		with serial.Serial(Arm.storage.devices["d_armElbow"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-			ser.write(pyvesc.encode(SetDutyCycle(int(100000*self.speeds[2]))))
+			ser.write(pyvesc.encode(SetDutyCycle(int(100000*Arm.storage.speeds[2]))))
 	if "d_armWristRot" in Arm.storage.devices:
 		with serial.Serial(Arm.storage.devices["d_armWristRot"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-			ser.write(pyvesc.encode(SetDutyCycle(int(100000*self.speeds[4]))))
+			ser.write(pyvesc.encode(SetDutyCycle(int(100000*Arm.storage.speeds[4]))))
 	if "d_armGripperOpen" in Arm.storage.devices:
 		with serial.Serial(Arm.storage.devices["d_armGripperOpen"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
 			ser.write(pyvesc.encode(SetDutyCycle(int(100000*Arm.storage.speeds[5]))))
@@ -324,7 +290,7 @@ async def on_buttonY_down(event, data):
 def messageTrigger(event, message):
 	if message.key in device_keys:
 		print("Received device: {} at {}".format(message.key, message.data), "DEBUG")
-		self.devices[message.key] = message.data
+		Arm.storage.devices[message.key] = message.data
 		with serial.Serial(message.data, baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
 			# Turn on encoder readings for this VESC
 			ser.write(pyvesc.encode(
