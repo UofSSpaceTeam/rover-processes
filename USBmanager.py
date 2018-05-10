@@ -60,10 +60,12 @@ def get_subscribers():
         while True:
             msg = driver.read() # blocking
             if isinstance(msg, pyvesc.ReqSubscription):
-                driver.start_reader(handle_vesc_message)
+                if msg.subscription not in ['armWrist']: # hacks for position request
+                    driver.start_reader(handle_vesc_message)
                 manager.storage.drivers[msg.subscription] = driver
                 manager.storage.sub_map[port.device] = msg.subscription
                 print('*/'+msg.subscription)
+                # subscribe
                 @manager.on('*/'+msg.subscription)
                 async def _write_to_device(event, data):
                     if 'USBManager' in event:
@@ -74,6 +76,18 @@ def get_subscribers():
                     vesc_message = dict_to_vesc(data)
                     await manager.loop.run_in_executor(
                             manager.executor, dvr.write, vesc_message)
+
+                # request handler
+                @manager.on_request(msg.subscription)
+                async def _request_from_vesc(vesc_msg):
+                    dvr = manager.storage.drivers[msg.subscription]
+                    vesc_msg = dict_to_vesc(vesc_msg)
+                    await manager.loop.run_in_executor(
+                            manager.executor, dvr.write_request, vesc_msg)
+                    resp = await manager.loop.run_in_executor(
+                            manager.executor, dvr.read)
+                    resp = vesc_to_dict(resp)
+                    return resp
 
                 break
 
