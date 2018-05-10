@@ -11,13 +11,9 @@
 # or implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-from .RoverProcess import RoverProcess
-import pyvesc
-from pyvesc import SetDutyCycle, GetRotorPosition, SetRotorPositionMode
-from roverprocess.arm17.arm import Joints, Controller, Config, ManualControl,Sections,Limits,PlanarControl
+from libraries.arm17.arm import Joints, Controller, Config, ManualControl,Sections,Limits,PlanarControl
 from math import pi
 import math
-import serial
 
 # Any libraries you need can be imported here. You almost always need time!
 import time
@@ -64,7 +60,7 @@ ArmDevice.storage.joint_offsets = None # D to I to T T O
  setup()
 	:param: arm_storage - a device's storage, in this case, that of the arm.
 
-	:synopsis: Takes in a device's and initalizes all contained parameters
+	:synopsis: Takes in a device's storage and initalizes all contained parameters
 		   to the values from the old class.
 '''
 def setup(arm_storage):
@@ -90,16 +86,16 @@ def setup(arm_storage):
 					wrist_pitch = 0.4,
 					wrist_roll = 0.8,
 					gripper = 0.8)
-		arm_storage.config = Config(
-					arm_storage.section_lengths,
-					arm_storage.joint_limits,
-					arm_stoage.max_angular_velocity)
-		arm_storage.controller = Controller(arm_storage.config)
-		arm_stoarge.mode = ManualControl()
-		arm_storage.devices = {}
-		#joint_offesets are values in degrees to 'zero' the encoder angle
-		arm_storage.joint_offsets = {'d_armShoulder':-332.544,
-					     'd_armElbow':-221.505+90}
+	arm_storage.config = Config(
+				arm_storage.section_lengths,
+				arm_storage.joint_limits,
+				arm_storage.max_angular_velocity)
+	arm_storage.controller = Controller(arm_storage.config)
+	arm_storage.mode = ManualControl()
+	arm_storage.devices = {}
+	#joint_offesets are values in degrees to 'zero' the encoder angle
+	arm_storage.joint_offsets = {'d_armShoulder':-332.544,
+				     'd_armElbow':-221.505+90}
 	
 
 def simulate_positions():
@@ -107,8 +103,7 @@ def simulate_positions():
 	new_joints = list(ArmDevice.storage.joints_pos)
 	for i in range(len(ArmDevice.storage.speeds)):
 		if new_joints[i] is not None:
-			new_joints[i] = ArmDevice.storage.joints_pos[i] + 
-					ArmDevice.storage.speeds[i] * dt
+			new_joints[i] = ArmDevice.storage.joints_pos[i] + ArmDevice.storage.speeds[i] * dt
 	return Joints(*new_joints)
 
 def poll_encoder(device):
@@ -148,6 +143,7 @@ def get_positions():
 	return Joints(*new_joints) 
 
 # I don't think we use this
+@ArmDevice.every(dt)
 def loop():
 	ArmDevice.storage.joints_pos = get_positions()
 	print("command: {}".format(ArmDevice.storage.command), "DEBUG")
@@ -180,7 +176,8 @@ def send_duties():
 			ser.write(pyvesc.encode(SetDutyCycle(int(100000*ArmDevice.storage.speeds[5]))))
 
 @ArmDevice.on('*/joystick1') 
-async def on_joystick1(event, data): ''' Shoulder joint, and radius control.'''
+async def on_joystick1(event, data): 
+	''' Shoulder joint, and radius control.'''
 	#print("joystick1:{}".format(data), "DEBUG")
 	y_axis = data[1]
 	if isinstance(ArmDevice.storage.mode, ManualControl):
@@ -299,7 +296,7 @@ def messageTrigger(event, message):
 					SetRotorPositionMode.DISP_POS_MODE_ENCODER )))
 
 
-
+setup(ArmDevice.storage)
 ArmDevice.start()
 ArmDevice.wait()
 
