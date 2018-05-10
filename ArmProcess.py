@@ -140,194 +140,196 @@ class ArmProcess(RoverProcess):
 		# self.joint_offsets = {"d_armShoulder":0, "d_armElbow":0}
 
 
-	def simulate_positions():
-		''' Updates the positions by calculating new values for testing.'''
-		new_joints = list(Arm.storage.joints_pos)
-		for i in range(len(Arm.storage.speeds)):
-			if new_joints[i] is not None:
-				new_joints[i] = Arm.storage.joints_pos[i] + 
-						Arm.storage.speeds[i] * dt
-		return Joints(*new_joints)
+def simulate_positions():
+	''' Updates the positions by calculating new values for testing.'''
+	new_joints = list(Arm.storage.joints_pos)
+	for i in range(len(Arm.storage.speeds)):
+		if new_joints[i] is not None:
+			new_joints[i] = Arm.storage.joints_pos[i] + 
+					Arm.storage.speeds[i] * dt
+	return Joints(*new_joints)
 
-	def poll_encoder( device):
-		''' Polls each VESC for its encoder position.'''
-		with serial.Serial(Arm.storeage.devices[device], 
-			baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
+def poll_encoder(device):
+	''' Polls each VESC for its encoder position.'''
+	with serial.Serial(Arm.storeage.devices[device], 
+		baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
 
-			ser.write(pyvesc.encode_request(GetRotorPosition))
-			# while ser.in_waiting < 9:
-			# 	# Wait for response. TODO: Maybe don't wait forever...
-			# 	pass
-			buffer = ser.read(10) # size of a RotorPosition message
-			try:
-				(response, consumed) = pyvesc.decode(buffer)
-				if response.__class__ == GetRotorPosition:
-					return response.rotor_pos
-			except:
-				print("Failed to read rotor position {}".format(device), "ERROR")
-		return None
+		ser.write(pyvesc.encode_request(GetRotorPosition))
+		# while ser.in_waiting < 9:
+		# 	# Wait for response. TODO: Maybe don't wait forever...
+		# 	pass
+		buffer = ser.read(10) # size of a RotorPosition message
+		try:
+			(response, consumed) = pyvesc.decode(buffer)
+			if response.__class__ == GetRotorPosition:
+				return response.rotor_pos
+		except:
+			print("Failed to read rotor position {}".format(device), "ERROR")
+	return None
 
-	def get_positions():
-		''' Returns an updated Joints object with the current arm positions'''
-		new_joints = list(Arm.storage.joints_pos)
-		for i, device in enumerate(["d_armShoulder", "d_armElbow", "d_armWristPitch"]):
-			if device in Arm.storage.devices:
-				reading = Arm.storage.poll_encoder(device)
-				if reading is not None:
-					if device == "d_armShoulder" and reading < 180:
-						# The shoulder joint's magnet happens to be orientated
-						# that the encoder flips from 360 to 0 partway through
-						# the rotation.
-						reading += 360
-					reading += Arm.storage.joint_offsets[device]
-					new_joints[i+1] = round(math.radians(reading), 3) #Convert to radians
-				else:
-					print("Could not read joint position {}".format(device), "WARNING")
-		return Joints(*new_joints) def loop(self):
-		Arm.storage.joints_pos = get_positions()
-		print("command: {}".format(self.command), "DEBUG")
-		Arm.storage.controller.user_command(Arm.storage.mode, *Arm.storage.command)
-		Arm.storage.speeds = Arm.storage.controller.update_duties(Arm.storage.joints_pos)
-		#publish speeds/duty cycles here
-		Arm.storage.log("joints_pos: {}".format(Arm.storage.joints_pos), "DEBUG")
-		Arm.storage.log("speeds: {}".format(Arm.storage.speeds), "DEBUG")
-		send_duties() #This may have not work, used to have a self
-		time.sleep(dt)
-
-	def send_duties():
-		''' Tell each motor controller to turn on motors'''
-		if "d_armBase" in Arm.storage.devices:
-			with serial.Serial(Arm.storage.devices["d_armBase"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-				ser.write(pyvesc.encode(SetDutyCycle(int(100000*Arm.storage.speeds[0]))))
-		if "d_armShoulder" in Arm.storage.devices:
-			with serial.Serial(Arm.storage.devices["d_armShoulder"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-				ser.write(pyvesc.encode(SetDutyCycle(int(100000*self.speeds[1]))))
-		if "d_armElbow" in self.devices:
-			with serial.Serial(Arm.storage.devices["d_armElbow"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-				ser.write(pyvesc.encode(SetDutyCycle(int(100000*self.speeds[2]))))
-		if "d_armWristRot" in Arm.storage.devices:
-			with serial.Serial(Arm.storage.devices["d_armWristRot"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-				ser.write(pyvesc.encode(SetDutyCycle(int(100000*self.speeds[4]))))
-		if "d_armGripperOpen" in Arm.storage.devices:
-			with serial.Serial(Arm.storage.devices["d_armGripperOpen"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-				ser.write(pyvesc.encode(SetDutyCycle(int(100000*Arm.storage.speeds[5]))))
-
-	@Arm.on('*/joystick1') 
-	async def on_joystick1(event, data): ''' Shoulder joint, and radius control.'''
-		#self.log("joystick1:{}".format(data), "DEBUG")
-		y_axis = data[1]
-		if isinstance(event.mode, ManualControl):
-			y_axis *= -1*shoulder_max_speed
-			if y_axis > shoulder_min_speed or y_axis < -shoulder_min_speed:
-				armShoulderSpeed = y_axis
+def get_positions():
+	''' Returns an updated Joints object with the current arm positions'''
+	new_joints = list(Arm.storage.joints_pos)
+	for i, device in enumerate(["d_armShoulder", "d_armElbow", "d_armWristPitch"]):
+		if device in Arm.storage.devices:
+			reading = Arm.storage.poll_encoder(device)
+			if reading is not None:
+				if device == "d_armShoulder" and reading < 180:
+					# The shoulder joint's magnet happens to be orientated
+					# that the encoder flips from 360 to 0 partway through
+					# the rotation.
+					reading += 360
+				reading += Arm.storage.joint_offsets[device]
+				new_joints[i+1] = round(math.radians(reading), 3) #Convert to radians
 			else:
-				armShoulderSpeed = 0
-			event.command[1] = armShoulderSpeed
-		elif isinstance(event.mode, PlanarControl):
-			y_axis = (y_axis * radius_max_speed)
-			if y_axis > radius_min_speed or y_axis < -radius_min_speed:
-				radius_speed = y_axis
-			else:
-				radius_speed = 0
-			event.command[0] = radius_speed
+				print("Could not read joint position {}".format(device), "WARNING")
+	return Joints(*new_joints) def loop(self):
+	Arm.storage.joints_pos = get_positions()
+	print("command: {}".format(self.command), "DEBUG")
+	Arm.storage.controller.user_command(Arm.storage.mode, *Arm.storage.command)
+	Arm.storage.speeds = Arm.storage.controller.update_duties(Arm.storage.joints_pos)
+	#publish speeds/duty cycles here
+	print("joints_pos: {}".format(Arm.storage.joints_pos), "DEBUG")
+	print("speeds: {}".format(Arm.storage.speeds), "DEBUG")
+	send_duties() #This may have not work, used to have a self
+	time.sleep(dt)
 
-	@Arm.on('*/joystick2')
-	async def on_joystick2(event, data):
-		''' Elbow joints and z/height control'''
-		#self.log("joystick2:{}".format(data), "DEBUG")
-		y_axis = data[1]
-		if isinstance(event.mode, ManualControl):
-			y_axis *= elbow_max_speed
-			if y_axis > elbow_min_speed or y_axis < -elbow_min_speed:
-				armY_ElbowSpeed = y_axis
-			else:
-				armY_ElbowSpeed = 0
-			event.command[2] = armY_ElbowSpeed
-		elif isinstance(event.mode, PlanarControl):
-			y_axis = (y_axis * height_max_speed)
-			if y_axis > height_min_speed or y_axis < -height_min_speed:
-				height_speed = y_axis
-			else:
-				height_speed = 0
-			event.command[1] = height_speed
-	@Arm.on('*/dpad')
-	async def on_dpad(event, data):
-		x_axis = data[0]
-		y_axis = data[1]
-		event.command[3] = y_axis*wrist_pitch_speed
-		event.command[4] = x_axis*gripper_rotation_speed
+def send_duties():
+	''' Tell each motor controller to turn on motors'''
+	if "d_armBase" in Arm.storage.devices:
+		with serial.Serial(Arm.storage.devices["d_armBase"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
+			ser.write(pyvesc.encode(SetDutyCycle(int(100000*Arm.storage.speeds[0]))))
+	if "d_armShoulder" in Arm.storage.devices:
+		with serial.Serial(Arm.storage.devices["d_armShoulder"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
+			ser.write(pyvesc.encode(SetDutyCycle(int(100000*self.speeds[1]))))
+	if "d_armElbow" in self.devices:
+		with serial.Serial(Arm.storage.devices["d_armElbow"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
+			ser.write(pyvesc.encode(SetDutyCycle(int(100000*self.speeds[2]))))
+	if "d_armWristRot" in Arm.storage.devices:
+		with serial.Serial(Arm.storage.devices["d_armWristRot"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
+			ser.write(pyvesc.encode(SetDutyCycle(int(100000*self.speeds[4]))))
+	if "d_armGripperOpen" in Arm.storage.devices:
+		with serial.Serial(Arm.storage.devices["d_armGripperOpen"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
+			ser.write(pyvesc.encode(SetDutyCycle(int(100000*Arm.storage.speeds[5]))))
 
-	@Arm.on('*/triggerR')
-	async def on_triggerR(event, trigger):
-		''' Base rotation right'''
-		#self.log("triggerR:{}".format(trigger), "DEBUG")
-		trigger = (trigger + 1)/2
-		armBaseSpeed = trigger * base_max_speed/2
-		if event.base_direction is "left" or event.base_direction is None:
-			if -base_min_speed <armBaseSpeed < base_min_speed:
-				armBaseSpeed = 0
-				event.base_direction = None
-			else:
-				event.base_direction = "left"
-			if isinstance(event.mode, ManualControl):
-				event.command[0] = armBaseSpeed
-			elif isinstance(event.mode, PlanarControl):
-				event.command[2] = armBaseSpeed
-
-
-	@Arm.on(triggerL)
-	async def on_triggerL(event, trigger):
-		''' Base rotation left'''
-		#self.log("triggerL:{}".format(trigger), "DEBUG")
-		trigger = -1*(trigger + 1)/2
-		armBaseSpeed = trigger * base_max_speed/2
-		if event.base_direction is "right" or event.base_direction is None:
-			if -base_min_speed <armBaseSpeed < base_min_speed:
-				armBaseSpeed = 0
-				event.base_direction = None
-			else:
-				event.base_direction = "right"
-			if isinstance(event.mode, ManualControl):
-				event.command[0] = armBaseSpeed
-			elif isinstance(event.mode, PlanarControl):
-				event.command[2] = armBaseSpeed
-	@Arm.on('*/buttonB_down')
-	async def on_buttonB_down(event, data):
-		if isinstance(event.mode, ManualControl):
-			event.mode = PlanarControl()
-			event.log("PlanarControl")
+@Arm.on('*/joystick1') 
+async def on_joystick1(event, data): ''' Shoulder joint, and radius control.'''
+	#print("joystick1:{}".format(data), "DEBUG")
+	y_axis = data[1]
+	if isinstance(Arm.storage.mode, ManualControl):
+		y_axis *= -1*shoulder_max_speed
+		if y_axis > shoulder_min_speed or y_axis < -shoulder_min_speed:
+			armShoulderSpeed = y_axis
 		else:
-			event.mode = ManualControl()
-			event.log("ManualControl")
-	@Arm.on('buttonA_down')
-	async def on_buttonA_down(event, data):
-		event.log("gripper close:{}".format(data), "DEBUG")
-		event.command[5] = gripper_open_speed
+			armShoulderSpeed = 0
+		Arm.storage.command[1] = armShoulderSpeed
+	elif isinstance(Arm.storage.mode, PlanarControl):
+		y_axis = (y_axis * radius_max_speed)
+		if y_axis > radius_min_speed or y_axis < -radius_min_speed:
+			radius_speed = y_axis
+		else:
+			radius_speed = 0
+		Arm.storage.command[0] = radius_speed
 
-	@Arm.on('buttonA_up')
-	async def on_buttonA_up(event,data):
-		event.log("gripper close stop:{}".format(data), "DEBUG")
-		event.command[5] = 0
+@Arm.on('*/joystick2')
+async def on_joystick2(event, data):
+	''' Elbow joints and z/height control'''
+	y_axis = data[1]
+	if isinstance(Arm.storage.mode, ManualControl):
+		y_axis *= elbow_max_speed
+		if y_axis > elbow_min_speed or y_axis < -elbow_min_speed:
+			armY_ElbowSpeed = y_axis
+		else:
+			armY_ElbowSpeed = 0
+		Arm.storage.command[2] = armY_ElbowSpeed
+	elif isinstance(Arm.storage.mode, PlanarControl):
+		y_axis = (y_axis * height_max_speed)
+		if y_axis > height_min_speed or y_axis < -height_min_speed:
+			height_speed = y_axis
+		else:
+			height_speed = 0
+		Arm.storage.command[1] = height_speed
 
-	@Arm.on('buttonY_up')
-	async def on_buttonY_up(event,data):
-		event.log("gripper open stop:{}".format(data), "DEBUG")
-		event.command[5] = 0
+@Arm.on('*/dpad')
+async def on_dpad(event, data):
+	x_axis = data[0]
+	y_axis = data[1]
+	Arm.storage.command[3] = y_axis*wrist_pitch_speed
+	Arm.storage.command[4] = x_axis*gripper_rotation_speed
 
-	@Arm.on('buttonY_down')
-	async def on_buttonY_down(event, data):
-		event.log("gripper open:{}".format(data), "DEBUG")
-		event.command[5] = -gripper_open_speed
+@Arm.on('*/triggerR')
+async def on_triggerR(event, trigger):
+	''' Base rotation right'''
+	#print("triggerR:{}".format(trigger), "DEBUG")
+	trigger = (trigger + 1)/2
+	armBaseSpeed = trigger * base_max_speed/2
+	if Arm.storage.base_direction is "left" or Arm.storage.base_direction is None:
+		if -base_min_speed <armBaseSpeed < base_min_speed:
+			armBaseSpeed = 0
+			Arm.storage.base_direction = None
+		else:
+			Arm.storage.base_direction = "left"
+		if isinstance(Arm.storage.mode, ManualControl):
+			Arm.storage.command[0] = armBaseSpeed
+		elif isinstance(Arm.storage.mode, PlanarControl):
+			Arm.storage.command[2] = armBaseSpeed
 
-	def messageTrigger(event, message):
-		if message.key in device_keys:
-			event.log("Received device: {} at {}".format(message.key, message.data), "DEBUG")
-			self.devices[message.key] = message.data
-			with serial.Serial(message.data, baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-				# Turn on encoder readings for this VESC
-				ser.write(pyvesc.encode(
-					SetRotorPositionMode(
-						SetRotorPositionMode.DISP_POS_MODE_ENCODER )))
+
+@Arm.on('*/triggerL')
+async def on_triggerL(event, trigger):
+	''' Base rotation left'''
+	#print("triggerL:{}".format(trigger), "DEBUG")
+	trigger = -1*(trigger + 1)/2
+	armBaseSpeed = trigger * base_max_speed/2
+	if Arm.storage.base_direction is "right" or Arm.storage.base_direction is None:
+		if -base_min_speed <armBaseSpeed < base_min_speed:
+			armBaseSpeed = 0
+			Arm.storage.base_direction = None
+		else:
+			Arm.storage.base_direction = "right"
+		if isinstance(Arm.storage.mode, ManualControl):
+			Arm.storage.command[0] = armBaseSpeed
+		elif isinstance(Arm.storage.mode, PlanarControl):
+			Arm.storage.command[2] = armBaseSpeed
+
+@Arm.on('*/buttonB_down')
+async def on_buttonB_down(event, data):
+	if isinstance(Arm.storage.mode, ManualControl):
+		Arm.storage.mode = PlanarControl()
+		print("PlanarControl")
+	else:
+		Arm.storage.mode = ManualControl()
+		print("ManualControl")
+
+@Arm.on('*/buttonA_down')
+async def on_buttonA_down(event, data):
+	print("gripper close:{}".format(data), "DEBUG")
+	Arm.storage.command[5] = gripper_open_speed
+
+@Arm.on('*/buttonA_up')
+async def on_buttonA_up(event,data):
+	print("gripper close stop:{}".format(data), "DEBUG")
+	Arm.storage.command[5] = 0
+
+@Arm.on('*/buttonY_up')
+async def on_buttonY_up(event,data):
+	print("gripper open stop:{}".format(data), "DEBUG")
+	Arm.storage.command[5] = 0
+
+@Arm.on('*/buttonY_down')
+async def on_buttonY_down(event, data):
+	print("gripper open:{}".format(data), "DEBUG")
+	Arm.storage.command[5] = -gripper_open_speed
+
+def messageTrigger(event, message):
+	if message.key in device_keys:
+		print("Received device: {} at {}".format(message.key, message.data), "DEBUG")
+		self.devices[message.key] = message.data
+		with serial.Serial(message.data, baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
+			# Turn on encoder readings for this VESC
+			ser.write(pyvesc.encode(
+				SetRotorPositionMode(
+					SetRotorPositionMode.DISP_POS_MODE_ENCODER )))
 
 
 
