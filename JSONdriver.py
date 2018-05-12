@@ -1,10 +1,8 @@
 import time
 import threading
+import json
 
 import serial
-from serial.tools import list_ports
-import pyvesc
-
 
 class ReaderThread(threading.Thread):
     def __init__(self, driver, callback):
@@ -16,13 +14,12 @@ class ReaderThread(threading.Thread):
 
     def run(self):
         while not self.exit:
-            vesc_msg = self.driver.read()
-            if vesc_msg is not None:
-                self.callback(vesc_msg, self.driver.usbpath)
+            msg = self.driver.read()
+            if msg is not None:
+                self.callback(msg, self.driver.usbpath)
 
-
-class VESCDriver:
-    '''Provides a simple pyvesc and Serial wrapper for VESC serial devices.'''
+class JSONDriver:
+    '''Provides a simple Serial wrapper for JSON serial devices.'''
 
     def __init__(self, usbpath, baudrate=115200, read_callback=None):
         '''Create a new device.
@@ -31,7 +28,7 @@ class VESCDriver:
             buadrate (int): The baudrate to communicate at. defaults to 115200.
             read_callback (function): If specified, a background thread will
             continually read from the device and call read_callback,
-            passing in a pyvesc VESC message and the usbpath it came from.
+            passing in a JSON message and the usbpath it came from.
         '''
         self.usbpath = usbpath
         self.baudrate = 115200
@@ -39,23 +36,19 @@ class VESCDriver:
         self.start_reader(read_callback)
 
 
-    def write(self, vesc_message):
-        '''Send a pyvesc VESC message to the device'''
-        b = pyvesc.encode(vesc_message)
+    def write(self, msg):
+        '''Send a json message to the device'''
+        b = json.encode(msg)
         print(b)
         self.ser.write(b)
 
     def read(self):
-        '''Read a pyvesc VESC message from the device'''
+        '''Read a json message from the device'''
         # from Roveberrypy
-        to_int = lambda b: int.from_bytes(b, byteorder='big')
-        head = self.ser.read()
-        # magic VESC header must be 2 or 3
-        if not to_int(head) == 2 or to_int(head) == 3:
-                return None
-        length = self.ser.read(to_int(head) - 1)
-        packet = head + length + self.ser.read(to_int(length) + 3)
-        return pyvesc.decode(packet)[0]
+        size = self.ser.read(1) # this is assuming a message is less than 256 bytes
+        length = int.from_bytes(size, byteorder='big')
+        packet = self.ser.read(length)
+        return json.loads(packet.decode('utf8'))
 
     def start_reader(self, callback):
         ''' Starts a background reader thread.
@@ -78,8 +71,8 @@ class VESCDriver:
             self.reader_thread.join(0.1)
 
 def test_driver():
-    def callback(vesc_message):
-        print(vesc_message)
+    def callback(msg):
+        print(msg)
     driver = VESCDriver('/dev/ttyACM0', read_callback=callback)
     msg = pyvesc.BlinkLed(0)
     try:
