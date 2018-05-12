@@ -47,28 +47,28 @@ ArmDevice.storage.base_direction = None
 ArmDevice.storage.joints_pos = None
 ArmDevice.storage.speeds = None
 ArmDevice.storage.command = None
-ArmDevice.storage.section_lengths = None #Not actually from self
-ArmDevice.storage.joint_limits = None # Also was not from self
-ArmDevice.storage.max_angular_velocity = None #Again, not from self
-ArmDevice.storage.config = None #May not need this one in storage.
-ArmDevice.storage.controller = None #Ditto
-ArmDevice.storage.mode = None #Ditto
-ArmDevice.storage.devices = None #dytto
-ArmDevice.storage.joint_offsets = None # D to I to T T O
+ArmDevice.storage.section_lengths = None
+ArmDevice.storage.joint_limits = None
+ArmDevice.storage.max_angular_velocity = None
+ArmDevice.storage.config = None
+ArmDevice.storage.controller = None
+ArmDevice.storage.mode = None
+ArmDevice.storage.devices = None
+ArmDevice.storage.joint_offsets = None
 
-'''
- setup()
-    :param: arm_storage - a device's storage, in this case, that of the arm.
-
-    :synopsis: Takes in a device's storage and initalizes all contained parameters
-           to the values from the old class.
-'''
 def setup(arm_storage):
+    '''
+     setup()
+        :param: arm_storage - a device's storage, in this case, that of the arm.
+
+        :synopsis: Takes in a device's storage and initalizes all contained parameters
+               to the values from the old class.
+    '''
     arm_storage.base_direction = None
     arm_storage.joints_pos = Joints(0,0,pi/4,0,0,0)
     arm_storage.speeds = Joints(0,0,0,0,0,0)
     arm_storage.command = [0,0,0,0,0,0]
-    arm_storage.section_lengths = Sections(
+    arm_storage.section_lengths = Sections( #TODO: update lengths
             upper_arm = 0.35,
             forearm = 0.42,
             end_effector = 0.1)
@@ -106,9 +106,9 @@ def simulate_positions():
             new_joints[i] = ArmDevice.storage.joints_pos[i] + ArmDevice.storage.speeds[i] * dt
     return Joints(*new_joints)
 
-def poll_encoder(device):
+def poll_encoder(device): #TODO Can delete this now
     ''' Polls each VESC for its encoder position.'''
-    with serial.Serial(ArmDevice.storeage.devices[device],
+    with serial.Serial(ArmDevice.storage.devices[device],
             baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
 
         ser.write(pyvesc.encode_request(GetRotorPosition))
@@ -125,6 +125,7 @@ def poll_encoder(device):
     return None
 
 def get_positions():
+    #TODO: use requests from the USBManager. see usb_req_example.py
     ''' Returns an updated Joints object with the current arm positions'''
     new_joints = list(ArmDevice.storage.joints_pos)
     for i, device in enumerate(["d_armShoulder", "d_armElbow", "d_armWristPitch"]):
@@ -142,10 +143,10 @@ def get_positions():
                 print("Could not read joint position {}".format(device), "WARNING")
     return Joints(*new_joints)
 
-# I don't think we use this
 @ArmDevice.every(dt)
 def loop():
-    ArmDevice.storage.joints_pos = get_positions()
+    # ArmDevice.storage.joints_pos = get_positions()
+    ArmDevice.storage.joints_pos = simulate_positions()
     print("command: {}".format(ArmDevice.storage.command), "DEBUG")
     ArmDevice.storage.controller.user_command(ArmDevice.storage.mode, *ArmDevice.storage.command) #Keep an eye on that pointer.
     ArmDevice.storage.speeds = ArmDevice.storage.controller.update_duties(ArmDevice.storage.joints_pos)
@@ -157,6 +158,7 @@ def loop():
     send_duties() #This may have not work, used to have a self
 
 def send_duties():
+    #TODO: Send commands through USBManager. See DriveProcess.py
     ''' Tell each motor controller to turn on motors'''
     if "d_armBase" in ArmDevice.storage.devices:
         with serial.Serial(ArmDevice.storage.devices["d_armBase"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
@@ -284,7 +286,7 @@ async def on_buttonY_down(event, data):
     print("gripper open:{}".format(data), "DEBUG")
     ArmDevice.storage.command[5] = -gripper_open_speed
 
-def messageTrigger(event, message):
+def messageTrigger(event, message): #TODO: Can be deleted
     if message.key in device_keys:
         print("Received device: {} at {}".format(message.key, message.data), "DEBUG")
         ArmDevice.storage.devices[message.key] = message.data
