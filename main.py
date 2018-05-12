@@ -3,12 +3,13 @@ import time
 
 
 process_list = [
-    RunOnce('USBManager', 'python3 USBmanager.py'),
+    # RunOnce('USBManager', 'python3 USBmanager.py'),
     RunOnce('Printer', 'python3 Printer.py'),
     # RunOnce('GPSDriver', 'python3 GPSdriver.py'),
     # RunOnce('DriveControl', 'python3 DriveProcess.py'),
-    # RunOnce('Joystick', 'python3 JoystickProcess.py'),
-    RunOnce('getter', 'python3 usb_req_example.py'),
+    RunOnce('Joystick', 'python3 JoystickProcess.py'),
+    RunOnce('Arm', 'python3 ArmProcess.py')
+    # RunOnce('getter', 'python3 usb_req_example.py'),
 
 ]
 
