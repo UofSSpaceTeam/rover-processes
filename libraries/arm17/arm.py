@@ -7,6 +7,7 @@ Joints = collections.namedtuple('Joints', [
     'base',
     'shoulder',
     'elbow',
+    'forearm_roll',
     'wrist_pitch',
     'wrist_roll',
     'gripper'
@@ -109,6 +110,7 @@ class Geometry:
             joint_positions.base,
             joint_positions.shoulder,
             joint_positions.elbow + joint_positions.shoulder,
+            None,
             joint_positions.wrist_pitch + joint_positions.elbow + joint_positions.shoulder,
             None,
             None
@@ -166,11 +168,11 @@ class ControlMode:
 
 
 class ManualControl:
-    def __call__(self, config, joints, geometry, base, shoulder, elbow, wrist_pitch, wrist_roll, gripper):
+    def __call__(self, config, joints, geometry, base, shoulder, elbow, forearm_roll, wrist_pitch, wrist_roll, gripper):
         speed = Joints(
             *tuple_x_tuple(
                 config.max_angular_velocity,
-                (base, shoulder, elbow, wrist_pitch, wrist_roll, gripper)
+                (base, shoulder, elbow, forearm_roll, wrist_pitch, wrist_roll, gripper)
             )
         )
         speed = Limits.enforce(config.joint_limits, joints, speed)
@@ -178,7 +180,7 @@ class ManualControl:
 
 
 class PlanarControl:
-    def __call__(self, config, joints, geometry, dr, dz, base, wrist_pitch, wrist_roll, gripper):
+    def __call__(self, config, joints, geometry, dr, dz, base, forearm_roll, wrist_pitch, wrist_roll, gripper):
         # calculate planar movement
         drp0, drp1 = geometry.hold_radius() # 1, 0.832
         dzp0, dzp1 = geometry.hold_altitude()
@@ -190,7 +192,7 @@ class PlanarControl:
         speed = Joints(
             *tuple_x_tuple(
                 config.max_angular_velocity,
-                (base, shoulder, elbow, wrist_pitch, wrist_roll, gripper)
+                (base, shoulder, elbow, forearm_roll, wrist_pitch, wrist_roll, gripper)
             )
         )
         speed = Limits.enforce(config.joint_limits, joints, speed)

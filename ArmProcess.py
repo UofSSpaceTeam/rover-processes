@@ -65,17 +65,20 @@ def setup(arm_storage):
                to the values from the old class.
     '''
     arm_storage.base_direction = None
-    arm_storage.joints_pos = Joints(0,0,pi/4,0,0,0)
-    arm_storage.speeds = Joints(0,0,0,0,0,0)
-    arm_storage.command = [0,0,0,0,0,0]
+    arm_storage.joints_pos = Joints(0,0,pi/4,0,0,0,0)
+    arm_storage.speeds = Joints(0,0,0,0,0,0,0)
+    arm_storage.command = [0,0,0,0,0,0,0]
     arm_storage.section_lengths = Sections( #TODO: update lengths
             upper_arm = 0.35,
             forearm = 0.42,
             end_effector = 0.1)
     arm_storage.joint_limits = Joints(
             base = None,
-            shoulder = Limits(-0.09, 0.721),
-            elbow = Limits(1.392,1.699),
+            # shoulder = Limits(-0.09, 0.721),
+            # elbow = Limits(1.392,1.699),
+            shoulder = None,
+            elbow = None,
+            forearm_roll = None,
             wrist_pitch = None,
             wrist_roll = None,
             gripper = None)
@@ -83,6 +86,7 @@ def setup(arm_storage):
             base = 0.6,
             shoulder = 0.4,
             elbow = 0.4,
+            forearm_roll = 0.4,
             wrist_pitch = 0.4,
             wrist_roll = 0.8,
             gripper = 0.8)
@@ -105,24 +109,6 @@ def simulate_positions():
         if new_joints[i] is not None:
             new_joints[i] = ArmDevice.storage.joints_pos[i] + ArmDevice.storage.speeds[i] * dt
     return Joints(*new_joints)
-
-def poll_encoder(device): #TODO Can delete this now
-    ''' Polls each VESC for its encoder position.'''
-    with serial.Serial(ArmDevice.storage.devices[device],
-            baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-
-        ser.write(pyvesc.encode_request(GetRotorPosition))
-        # while ser.in_waiting < 9:
-        # 	# Wait for response. TODO: Maybe don't wait forever...
-        # 	pass
-        buffer = ser.read(10) # size of a RotorPosition message
-        try:
-            (response, consumed) = pyvesc.decode(buffer)
-            if response.__class__ == GetRotorPosition:
-                return response.rotor_pos
-        except:
-            print("Failed to read rotor position {}".format(device), "ERROR")
-    return None
 
 def get_positions():
     #TODO: use requests from the USBManager. see usb_req_example.py
@@ -157,24 +143,14 @@ def loop():
 
     send_duties() #This may have not work, used to have a self
 
-def send_duties():
-    #TODO: Send commands through USBManager. See DriveProcess.py
+async def send_duties():
     ''' Tell each motor controller to turn on motors'''
-    if "d_armBase" in ArmDevice.storage.devices:
-        with serial.Serial(ArmDevice.storage.devices["d_armBase"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-            ser.write(pyvesc.encode(SetDutyCycle(int(100000*ArmDevice.storage.speeds[0]))))
-    if "d_armShoulder" in ArmDevice.storage.devices:
-        with serial.Serial(ArmDevice.storage.devices["d_armShoulder"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-            ser.write(pyvesc.encode(SetDutyCycle(int(100000*ArmDevice.storage.speeds[1]))))
-    if "d_armElbow" in ArmDevice.storage.devices:
-        with serial.Serial(ArmDevice.storage.devices["d_armElbow"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-            ser.write(pyvesc.encode(SetDutyCycle(int(100000*ArmDevice.storage.speeds[2]))))
-    if "d_armWristRot" in ArmDevice.storage.devices:
-        with serial.Serial(ArmDevice.storage.devices["d_armWristRot"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-            ser.write(pyvesc.encode(SetDutyCycle(int(100000*ArmDevice.storage.speeds[4]))))
-    if "d_armGripperOpen" in ArmDevice.storage.devices:
-        with serial.Serial(ArmDevice.storage.devices["d_armGripperOpen"], baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-            ser.write(pyvesc.encode(SetDutyCycle(int(100000*ArmDevice.storage.speeds[5]))))
+    await ArmDevice.publish('armBase', {'SetRPM':int(ArmDevice.storage.speeds[0])})
+    await ArmDevice.publish('armShoulder', {'SetRPM':int(ArmDevice.storage.speeds[1])})
+    await ArmDevice.publish('armElbow', {'SetRPM':int(ArmDevice.storage.speeds[2])})
+    await ArmDevice.publish('armForearmRot', {'SetRPM':int(ArmDevice.storage.speeds[3])})
+    await ArmDevice.publish('arm_WristRot', {'SetRPM':int(ArmDevice.storage.speeds[4])})
+    await ArmDevice.publish('arm_GripperOpen', {'SetRPM':int(ArmDevice.storage.speeds[5])})
 
 @ArmDevice.on('*/joystick1')
 async def on_joystick1(event, data):
@@ -286,20 +262,7 @@ async def on_buttonY_down(event, data):
     print("gripper open:{}".format(data), "DEBUG")
     ArmDevice.storage.command[5] = -gripper_open_speed
 
-def messageTrigger(event, message): #TODO: Can be deleted
-    if message.key in device_keys:
-        print("Received device: {} at {}".format(message.key, message.data), "DEBUG")
-        ArmDevice.storage.devices[message.key] = message.data
-        with serial.Serial(message.data, baudrate=BAUDRATE, timeout=SERIAL_TIMEOUT) as ser:
-            # Turn on encoder readings for this VESC
-            ser.write(pyvesc.encode(
-                SetRotorPositionMode(
-                    SetRotorPositionMode.DISP_POS_MODE_ENCODER )))
-
 
 setup(ArmDevice.storage)
 ArmDevice.start()
 ArmDevice.wait()
-
-
-
