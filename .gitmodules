@@ -1,0 +1,6 @@
+[submodule "rover-webui"]
+	path = rover-webui
+	url = https://github.com/UofSSpaceTeam/rover-webui.git
+[submodule "robocluster_manager"]
+	path = robocluster_manager
+	url = https://github.com/UofSSpaceTeam/robocluster_manager.git
