@@ -110,19 +110,27 @@ def simulate_positions():
             new_joints[i] = ArmDevice.storage.joints_pos[i] + ArmDevice.storage.speeds[i] * dt
     return Joints(*new_joints)
 
-def get_positions():
-    #TODO: use requests from the USBManager. see usb_req_example.py
+def get_pos_field(resp):
+    '''Gets the rotor position from a GetRotorPosition request'''
+    try:
+        position = resp['GetRotorPosition']['rotor_pos']
+        return position
+    except KeyError:
+        return None
+
+async def get_positions():
     ''' Returns an updated Joints object with the current arm positions'''
     new_joints = list(ArmDevice.storage.joints_pos)
     for i, device in enumerate(["d_armShoulder", "d_armElbow", "d_armWristPitch"]):
         if device in ArmDevice.storage.devices:
-            reading = ArmDevice.storage.poll_encoder(device)
+            resp = await ArmDevice.request('USBManager', device, {'GetRotorPosition':0})
+            reading = get_pos_field(resp)
             if reading is not None:
-                if device == "d_armShoulder" and reading < 180:
-                    # The shoulder joint's magnet happens to be orientated
-                    # that the encoder flips from 360 to 0 partway through
-                    # the rotation.
-                    reading += 360
+                # if device == "d_armShoulder" and reading < 180:
+                #     # The shoulder joint's magnet happens to be orientated
+                #     # that the encoder flips from 360 to 0 partway through
+                #     # the rotation.
+                #     reading += 360
                 reading += ArmDevice.storage.joint_offsets[device]
                 new_joints[i+1] = round(math.radians(reading), 3) #Convert to radians
             else:
@@ -130,18 +138,18 @@ def get_positions():
     return Joints(*new_joints)
 
 @ArmDevice.every(dt)
-def loop():
-    # ArmDevice.storage.joints_pos = get_positions()
+async def loop():
+    # await ArmDevice.storage.joints_pos = get_positions()
     ArmDevice.storage.joints_pos = simulate_positions()
-    print("command: {}".format(ArmDevice.storage.command), "DEBUG")
+    print("command: {}".format(ArmDevice.storage.command))
     ArmDevice.storage.controller.user_command(ArmDevice.storage.mode, *ArmDevice.storage.command) #Keep an eye on that pointer.
     ArmDevice.storage.speeds = ArmDevice.storage.controller.update_duties(ArmDevice.storage.joints_pos)
 
     #publish speeds/duty cycles here
-    print("joints_pos: {}".format(ArmDevice.storage.joints_pos), "DEBUG")
-    print("speeds: {}".format(ArmDevice.storage.speeds), "DEBUG")
+    print("joints_pos: {}".format(ArmDevice.storage.joints_pos))
+    print("speeds: {}".format(ArmDevice.storage.speeds))
 
-    send_duties() #This may have not work, used to have a self
+    await send_duties()
 
 async def send_duties():
     ''' Tell each motor controller to turn on motors'''
