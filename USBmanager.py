@@ -10,11 +10,12 @@ import serial
 
 from VESCdriver import VESCDriver
 from JSONdriver import JSONDriver
+from roverutil import getnetwork
 
-IGNORE_LIST = ['/dev/ttyS0', '/dev/ttyAMA0']
+IGNORE_LIST = ['/dev/ttyS0', '/dev/ttyAMA0', '/dev/ttyUSB0']
 
 
-manager = Device('USBManager', 'rover')
+manager = Device('USBManager', 'rover', network=getnetwork())
 manager.storage.drivers = {}
 manager.storage.sub_map = {}
 
@@ -49,7 +50,9 @@ def handle_vesc_message(vesc_message, path):
         sub = manager.storage.sub_map[path]
         @manager.task
         async def pub_message():
-            await manager.publish(sub, vesc_to_dict(vesc_message))
+            msg = vesc_to_dict(vesc_message)
+            key = list(msg.keys())[0]
+            await manager.publish(sub + '/' + key, msg[key])
 
 def handle_json_message(json_message, path):
     if path in manager.storage.sub_map:
