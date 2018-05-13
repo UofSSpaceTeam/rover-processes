@@ -15,6 +15,7 @@ RPM_TO_ERPM = 12*19 # 12 poles, 19:1 gearbox
 DEADZONE = 0.1
 MAX_RPM = 40000/4
 MIN_RPM = 300
+MAX_RPM_CHANGE = 100
 MAX_CURRENT = 6
 MIN_CURRENT = 0.1
 CURVE_VAL = 17
@@ -83,6 +84,7 @@ DriveDevice = Device('DriveSystem', 'rover', network=getnetwork())
 DriveDevice.storage.right_brake = False
 DriveDevice.storage.left_brake = False
 DriveDevice.storage.drive_mode = "rpm" # "rpm" or "current"
+DriveDevice.storage.api_enabled = False
 
 @DriveDevice.on('*/joystick1')
 async def joystick1_callback(joystick1, data):
@@ -90,6 +92,8 @@ async def joystick1_callback(joystick1, data):
             A joystick1 message contains:
             [x axis (float -1:1), y axis (float -1:1)]
     """
+    if DriveDevice.storage.api_enabled:
+        return
     y_axis = data[1]
     if y_axis is None:
             return
@@ -112,6 +116,8 @@ async def joystick2_callback(joystick2, data):
             A joystick1 message contains:
             [x axis (float -1:1), y axis (float -1:1)]
     """
+    if DriveDevice.storage.api_enabled:
+        return
     y_axis = data[1]
     if y_axis is None:
             return
@@ -154,21 +160,28 @@ async def Rtrigger_callback(Rtrigger, trigger):
 
 
 #### Drive API #####
+
 async def setLeftWheelSpeed(rpm):
     rpm = rpm*RPM_TO_ERPM
     rpm = min(rpm, MAX_RPM)
     print(rpm)
-    await DriveDevice.publish("wheelLF", {'SetRPM':DirectionConstants['wheelLF']*rpm})
-    await DriveDevice.publish("wheelLM", {'SetRPM':DirectionConstants['wheelLM']*rpm})
-    await DriveDevice.publish("wheelLB", {'SetRPM':DirectionConstants['wheelLB']*rpm})
+    if DriveDevice.storage.api_enabled:
+        await DriveDevice.publish("wheelLF", {'SetRPM':DirectionConstants['wheelLF']*rpm})
+        await DriveDevice.publish("wheelLM", {'SetRPM':DirectionConstants['wheelLM']*rpm})
+        await DriveDevice.publish("wheelLB", {'SetRPM':DirectionConstants['wheelLB']*rpm})
 
 async def setRightWheelSpeed(rpm):
     rpm = rpm*RPM_TO_ERPM
     rpm = min(rpm, MAX_RPM)
     print(rpm)
-    await DriveDevice.publish("wheelRF", {'SetRPM':DirectionConstants['wheelRF']*rpm})
-    await DriveDevice.publish("wheelRM", {'SetRPM':DirectionConstants['wheelRM']*rpm})
-    await DriveDevice.publish("wheelRB", {'SetRPM':DirectionConstants['wheelRB']*rpm})
+    if DriveDevice.storage.api_enabled:
+        await DriveDevice.publish("wheelRF", {'SetRPM':DirectionConstants['wheelRF']*rpm})
+        await DriveDevice.publish("wheelRM", {'SetRPM':DirectionConstants['wheelRM']*rpm})
+        await DriveDevice.publish("wheelRB", {'SetRPM':DirectionConstants['wheelRB']*rpm})
+
+@DriveDevice.on('*/Autopilot')
+def enable_api(event, data):
+    DriveDevice.storage.api_enabled = data
 
 @DriveDevice.on('Stop')
 async def DriveStop_callback(event, data):

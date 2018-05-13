@@ -81,7 +81,7 @@ async def state_machine():
 ######## Callbacks ###########
 
 @Autopilot.on('*/Autopilot')
-def enable_autopilot(event, data):
+async def enable_autopilot(event, data):
     print('Setting Autopilot to {}'.format(data))
     Autopilot.storage.enabled = data
 
