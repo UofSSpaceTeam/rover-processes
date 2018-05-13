@@ -42,7 +42,6 @@ class VESCDriver:
     def write(self, vesc_message):
         '''Send a pyvesc VESC message to the device'''
         b = pyvesc.encode(vesc_message)
-        print(b)
         self.ser.write(b)
 
     def read(self):

@@ -39,7 +39,6 @@ class JSONDriver:
     def write(self, msg):
         '''Send a json message to the device'''
         b = json.encode(msg)
-        print(b)
         self.ser.write(b)
 
     def read(self):
@@ -69,26 +68,3 @@ class JSONDriver:
         if self.reader_thread:
             self.reader_thread.exit = True
             self.reader_thread.join(0.1)
-
-def test_driver():
-    def callback(msg):
-        print(msg)
-    driver = VESCDriver('/dev/ttyACM0', read_callback=callback)
-    msg = pyvesc.BlinkLed(0)
-    try:
-        driver.write(msg)
-        time.sleep(1)
-        msg = pyvesc.BlinkLed(1)
-        driver.write(msg)
-        time.sleep(1)
-        msg = pyvesc.BlinkLed(0)
-        driver.write(msg)
-        time.sleep(1)
-        print('done')
-    except KeyboardInterrupt:
-        pass
-    driver.stop()
-
-
-if __name__ == '__main__':
-    test_driver()
