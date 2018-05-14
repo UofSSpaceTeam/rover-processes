@@ -35,7 +35,8 @@ radius_min_speed = 0.2
 height_max_speed = 2
 height_min_speed = 0.2
 
-device_keys = ["d_armBase", "d_armShoulder", "d_armElbow", "d_armWristRot", "d_armGripperOpen"]
+#originally, armWritstPitch was 'armWristRot'.
+device_keys = ["armBase", "armShoulder", "armElbow", "armWristPitch", "armGripperOpen"]
 
 dt = 0.01
 BAUDRATE = 115200
@@ -98,8 +99,8 @@ def setup(arm_storage):
     arm_storage.mode = ManualControl()
     arm_storage.devices = {}
     #joint_offesets are values in degrees to 'zero' the encoder angle
-    arm_storage.joint_offsets = {'d_armShoulder':-332.544,
-            'd_armElbow':-221.505+90}
+    arm_storage.joint_offsets = {'armShoulder':-332.544,
+            'armElbow':-221.505+90,'armWristPitch':0}
 
 
 def simulate_positions():
@@ -121,7 +122,7 @@ def get_pos_field(resp):
 async def get_positions():
     ''' Returns an updated Joints object with the current arm positions'''
     new_joints = list(ArmDevice.storage.joints_pos)
-    for i, device in enumerate(["d_armShoulder", "d_armElbow", "d_armWristPitch"]):
+    for i, device in enumerate(["armShoulder", "armElbow", "armWristPitch"]):
         if device in ArmDevice.storage.devices:
             resp = await ArmDevice.request('USBManager', device, {'GetRotorPosition':0})
             reading = get_pos_field(resp)
@@ -132,6 +133,7 @@ async def get_positions():
                 #     # the rotation.
                 #     reading += 360
                 reading += ArmDevice.storage.joint_offsets[device]
+                print(device)
                 new_joints[i+1] = round(math.radians(reading), 3) #Convert to radians
             else:
                 print("Could not read joint position {}".format(device), "WARNING")
