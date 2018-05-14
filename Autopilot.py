@@ -43,13 +43,13 @@ async def drive_to_target():
             heading = await Autopilot.request('Navigation', 'RoverHeading')
             a = bearing - heading
             a = (a+180)%360 - 180 # find smallest angle difference
+            distance = await Autopilot.request('Navigation', 'distance', position, waypoints[0])
             if abs(a) > BEARING_THRESH:
                 if a >= 0: # Turn right
                     await Autopilot.send('DriveSystem', 'RotateRight', MAX_SPEED/60)
                 else: # Turn left
                     await Autopilot.send('DriveSystem', 'RotateLeft', MAX_SPEED/60)
                 return
-            distance = await Autopilot.request('Navigation', 'distance', position, waypoints[0])
             print("distance from {} to {} = {}".format(position, waypoints[0], distance))
             if distance > GPS_DISTANCE_THRESH:
                 await Autopilot.send('DriveSystem', 'DriveForward', MAX_SPEED)
@@ -57,6 +57,7 @@ async def drive_to_target():
                 print('!!!!!!!HERE!!!!!!!!!!')
                 # We are close enough TODO: search for ball
                 Autopilot.storage.enabled = False
+                await Autopilot.send('DriveSystem', 'Stop', 0)
                 await Autopilot.publish("Autopilot", False)  # update WebUI
                 await Autopilot.publish("TargetReached", True)
                 Autopilot.storage.state = waiting
