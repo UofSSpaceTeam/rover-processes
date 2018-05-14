@@ -134,10 +134,10 @@ async def setLeftWheelSpeed(rpm):
         if rpm > left_rpm: # speeding up
             rpm = min(left_rpm+d_rpm, MAX_RPM)
         else: # slowing down
-            rpm = min(rpm, MAX_RPM)
+            rpm = min(left_rpm-d_rpm, MAX_RPM)
     elif rpm < 0:
         if rpm > left_rpm: #slowing down
-            rpm = max(rpm, -MAX_RPM)
+            rpm = max(left_rpm+d_rpm, -MAX_RPM)
         else:
             rpm = max(left_rpm-d_rpm, -MAX_RPM)
     else:
@@ -157,10 +157,10 @@ async def setRightWheelSpeed(rpm):
         if rpm > right_rpm:
             rpm = min(right_rpm+d_rpm, MAX_RPM)
         else:
-            rpm = min(rpm, MAX_RPM)
+            rpm = min(right_rpm-d_rpm, MAX_RPM)
     elif rpm < 0:
         if rpm > right_rpm:
-            rpm = max(rpm, -MAX_RPM)
+            rpm = max(right_rpm+d_rpm, -MAX_RPM)
         else:
             rpm = max(right_rpm-d_rpm, -MAX_RPM)
     else:
