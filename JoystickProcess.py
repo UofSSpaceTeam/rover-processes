@@ -5,6 +5,7 @@ import pygame
 from robocluster import Device
 
 import config
+log = config.getLogger()
 
 LOOP_PERIOD = 0.1 # seconds
 

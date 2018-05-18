@@ -11,6 +11,7 @@ import serial
 from VESCdriver import VESCDriver
 from JSONdriver import JSONDriver
 import config
+log = config.getLogger()
 
 IGNORE_LIST = ['/dev/ttyS0', '/dev/ttyAMA0', '/dev/ttyUSB0']
 
@@ -62,22 +63,20 @@ def handle_json_message(json_message, path):
             await manager.publish(sub, json_message)
 
 def init_vesc_driver(port, ser, l):
-    print('VESC')
     to_int = lambda x: int.from_bytes(x, byteorder='big')
     length = ser.read(to_int(l) - 1)
     packet = l + length + ser.read(to_int(length) + 3)
 
     msg, _ = pyvesc.decode(packet)
-    print(msg)
+    log.debug(msg)
     if isinstance(msg, pyvesc.ReqSubscription):
-        print('Creating VESC driver')
+        log.debug('Creating VESC driver')
         ser.close()
         driver = VESCDriver(port.device)
         sub = msg.subscription
         driver.start_reader(handle_vesc_message)
         manager.storage.drivers[sub] = driver
         manager.storage.sub_map[port.device] = sub
-        print('*/'+sub)
         @manager.on('*/'+sub)
         async def _write_to_device(event, data):
             if 'USBManager' in event:
@@ -90,11 +89,10 @@ def init_vesc_driver(port, ser, l):
                     manager.executor, dvr.write, vesc_message)
         return True
     else:
-        print('Got bad subscription')
+        log.warning('Got bad subscription')
         return False
 
 def init_json_driver(port, ser, l):
-    print('JSON')
     try:
         leng = int.from_bytes(l, byteorder='big')
         packet = ser.read(leng)
@@ -107,7 +105,6 @@ def init_json_driver(port, ser, l):
     driver.start_reader(handle_json_message)
     manager.storage.drivers[sub] = driver
     manager.storage.sub_map[port.device] = sub
-    print('*/'+sub)
     @manager.on('*/'+sub)
     async def _write_to_device(event, data):
         if 'USBManager' in event:
@@ -125,7 +122,7 @@ def get_subscribers():
     for port in PortList:
         if port.device in IGNORE_LIST:
             continue
-        print('Found {}'.format(port.device))
+        log.info('Found {}'.format(port.device))
         ser = serial.Serial(port.device, baudrate=115200)
         looping = True
         while looping:
@@ -143,7 +140,7 @@ def get_subscribers():
 
 @manager.every('1s')
 def print_devices():
-    print("Devices: ", [key for key in manager.storage.drivers.keys()])
+    log.info("Devices: {}".format([key for key in manager.storage.drivers.keys()]))
 
 
 get_subscribers()

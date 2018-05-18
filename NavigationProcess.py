@@ -11,6 +11,7 @@ from robocluster import Device
 from libraries.GPS.GPSPosition import GPSPosition
 
 import config
+log = config.getLogger()
 
 
 class Rover:

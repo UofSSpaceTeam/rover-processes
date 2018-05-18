@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import time
 
 import config
+log = config.getLogger()
 
 KalmanFilter = Device('KalmanFilter', 'rover', network=config.network)
 
@@ -184,8 +185,8 @@ async def kalman_filter(event, data):
     true_gps = utm.to_latlon(x_cc[0, 0], x_cc[1, 0], zone_info[0], zone_info[1], strict=False)  # this has the value we
     cart_pos_final = [x_cc[0,0], x_cc[1,0]]
 
-    # print('raw: {}'.format(data))
-    # print("                                             filtered: {}".format(true_gps))
+    log.debug('raw: {}'.format(data))
+    log.debug("filtered: {}".format(true_gps))
 
     ''' pres = 0.00001
     dif_lat = abs(true_gps[0] - 52.132653)

@@ -8,6 +8,7 @@ from robocluster import Device
 
 from libraries.GPS.Piksi import Piksi
 import config
+log = config.getLogger()
 
 ## Global Variables
 LOOP_PERIOD = 0.1 # How often we pusblish positions
@@ -78,7 +79,7 @@ async def loop():
         while True:
             connected = piksi.connected()
             if not connected:
-                print("Rover piksi is not connected properly")
+                log.error("Rover piksi is not connected properly")
             else:
                 # print("Rover piksi is connected")
                 lats = []
@@ -95,14 +96,14 @@ async def loop():
                     await GPSdevice.publish('singlePointGPS',
                             [mean(lats), mean(longs)])
                 else:
-                    print("Failed to take GPS averege", "WARNING")
+                    log.warning("Failed to take GPS averege", "WARNING")
                 msg = piksi.poll(MSG_VEL_NED)
                 if msg is not None:
                     await GPSdevice.publish("GPSVelocity", [msg.n/1000, msg.e/1000])
             await GPSdevice.sleep(LOOP_PERIOD)
 
-if len(sys.argv) == 3:
-    SERIAL = sys.argv[3]
+if len(sys.argv) == 2:
+    SERIAL = sys.argv[2]
 else:
     print('Usage: GPSdriver.py <path-to-piksi>')
     print('Using default /dev/ttyUSB0')

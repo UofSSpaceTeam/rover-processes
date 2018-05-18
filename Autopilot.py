@@ -3,6 +3,7 @@ import math
 from robocluster import Device
 
 import config
+log = config.getLogger()
 
 Autopilot = Device('Autopilot', 'rover', network=config.network)
 
@@ -23,7 +24,7 @@ Autopilot.storage.waypoints = []
 async def waiting():
     if Autopilot.storage.enabled:
         Autopilot.storage.waypoints = await Autopilot.request( 'Navigation', 'waypoints')
-        print("Waypoints: ", Autopilot.storage.waypoints)
+        log.debug("Waypoints: {}".format(Autopilot.storage.waypoints))
         if len(Autopilot.storage.waypoints) > 0:
             Autopilot.storage.state = drive_to_target
     else:
@@ -50,11 +51,11 @@ async def drive_to_target():
                     await Autopilot.send('DriveSystem', 'RotateLeft', MAX_SPEED/60)
                 return
             distance = await Autopilot.request('Navigation', 'distance', position, waypoints[0])
-            print("distance from {} to {} = {}".format(position, waypoints[0], distance))
+            log.info("distance from {} to {} = {}".format(position, waypoints[0], distance))
             if distance > GPS_DISTANCE_THRESH:
                 await Autopilot.send('DriveSystem', 'DriveForward', MAX_SPEED)
             else:
-                print('!!!!!!!HERE!!!!!!!!!!')
+                log.info('!!!!!!!HERE!!!!!!!!!!')
                 # We are close enough TODO: search for ball
                 Autopilot.storage.enabled = False
                 await Autopilot.publish("Autopilot", False)  # update WebUI
@@ -74,7 +75,7 @@ async def drive_to_ball():
 Autopilot.storage.state = waiting
 @Autopilot.every(LOOP_PERIOD)
 async def state_machine():
-    print(Autopilot.storage.state.__name__)
+    log.debug(Autopilot.storage.state.__name__)
     await Autopilot.storage.state()
 
 
@@ -82,7 +83,7 @@ async def state_machine():
 
 @Autopilot.on('*/Autopilot')
 def enable_autopilot(event, data):
-    print('Setting Autopilot to {}'.format(data))
+    log.info('Setting Autopilot to {}'.format(data))
     Autopilot.storage.enabled = data
 
 Autopilot.start()

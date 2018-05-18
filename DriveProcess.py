@@ -6,6 +6,8 @@ from robocluster import Device
 
 import config
 
+log = config.getLogger()
+
 RPM_TO_ERPM = 12*19 # 12 poles, 19:1 gearbox
 
 # Limits for Electronic RPM.
@@ -157,7 +159,7 @@ async def Rtrigger_callback(Rtrigger, trigger):
 async def setLeftWheelSpeed(rpm):
     rpm = rpm*RPM_TO_ERPM
     rpm = min(rpm, MAX_RPM)
-    print(rpm)
+    log.debug('Left RPM: {}'.format(rpm))
     await DriveDevice.publish("wheelLF", {'SetRPM':DirectionConstants['wheelLF']*rpm})
     await DriveDevice.publish("wheelLM", {'SetRPM':DirectionConstants['wheelLM']*rpm})
     await DriveDevice.publish("wheelLB", {'SetRPM':DirectionConstants['wheelLB']*rpm})
@@ -165,7 +167,8 @@ async def setLeftWheelSpeed(rpm):
 async def setRightWheelSpeed(rpm):
     rpm = rpm*RPM_TO_ERPM
     rpm = min(rpm, MAX_RPM)
-    print(rpm)
+    log.debug('Right RPM: {}'.format(rpm))
+    await DriveDevice.publish("wheelLF", {'SetRPM':DirectionConstants['wheelLF']*rpm})
     await DriveDevice.publish("wheelRF", {'SetRPM':DirectionConstants['wheelRF']*rpm})
     await DriveDevice.publish("wheelRM", {'SetRPM':DirectionConstants['wheelRM']*rpm})
     await DriveDevice.publish("wheelRB", {'SetRPM':DirectionConstants['wheelRB']*rpm})
