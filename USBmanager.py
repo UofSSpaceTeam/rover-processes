@@ -10,12 +10,12 @@ import serial
 
 from VESCdriver import VESCDriver
 from JSONdriver import JSONDriver
-from roverutil import getnetwork
+import config
 
 IGNORE_LIST = ['/dev/ttyS0', '/dev/ttyAMA0', '/dev/ttyUSB0']
 
 
-manager = Device('USBManager', 'rover', network=getnetwork())
+manager = Device('USBManager', 'rover', network=config.network)
 manager.storage.drivers = {}
 manager.storage.sub_map = {}
 

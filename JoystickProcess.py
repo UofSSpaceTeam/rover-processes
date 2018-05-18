@@ -1,9 +1,10 @@
 import time
 import os
-from roverutil import getnetwork
 
 import pygame
 from robocluster import Device
+
+import config
 
 LOOP_PERIOD = 0.1 # seconds
 
@@ -11,7 +12,7 @@ os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.init()
 pygame.joystick.init()
 
-JoystickDevice = Device('JoystickDevice', 'rover', network=getnetwork())
+JoystickDevice = Device('JoystickDevice', 'rover', network=config.network)
 
 JoystickDevice.storage.joystick1 = pygame.joystick.Joystick(0)
 JoystickDevice.storage.joystick1.init()

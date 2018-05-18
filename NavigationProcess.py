@@ -10,7 +10,7 @@ from robocluster import Device
 
 from libraries.GPS.GPSPosition import GPSPosition
 
-from roverutil import getnetwork
+import config
 
 
 class Rover:
@@ -23,7 +23,7 @@ class Rover:
         self.roll = 0
 
 
-NavDevice = Device('Navigation', 'rover', getnetwork())
+NavDevice = Device('Navigation', 'rover', network=config.network)
 
 NavDevice.storage.rover = Rover()
 # NavDevice.storage.waypoints = [(52.132866, -106.628012)]
