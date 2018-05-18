@@ -61,6 +61,8 @@ def simulate_bno(accel):
 
 simDevice = Device('simDevice', 'rover', network=config.network)
 
+log = config.getLogger()
+
 # Rover parameters
 simDevice.storage.rover = Rover()
 simDevice.storage.rover.wheelspeed = [0, 0]
@@ -71,10 +73,10 @@ DELTA_T = 0.1
 async def update():
     simDevice.storage.rover.update(DELTA_T)
     # simDevice.storage.rover.wheelspeed = [x+0.1 for x in simDevice.storage.rover.wheelspeed]
-    # print('position', simDevice.storage.rover.position)
-    # print('wheel speed', simDevice.storage.rover.wheelspeed)
-    # print('heading', simDevice.storage.rover.heading)
-    # print('accleration', simDevice.storage.rover.acceleration)
+    log.debug('position: {}'.format(simDevice.storage.rover.position))
+    log.debug('wheel speed: {}'.format(simDevice.storage.rover.wheelspeed))
+    log.debug('heading: {}'.format(simDevice.storage.rover.heading))
+    log.debug('accleration: {}'.format(simDevice.storage.rover.acceleration))
 
 @simDevice.every(DELTA_T)
 async def publish_state():
