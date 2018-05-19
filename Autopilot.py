@@ -11,7 +11,9 @@ LOOP_PERIOD = 0.1
 MIN_WHEEL_RPM = 1000
 MAX_SPEED = 2 # m/s
 BEARING_THRESH = 10 # degrees
-GPS_DISTANCE_THRESH = 1 # meters
+GPS_DISTANCE_THRESH = 5 # meters
+BALL_HORIZONTAL_THRESH = 20 # pixels?
+BALL_DISTANCE_THRESH = 1
 
 ###### Initialization ########
 
@@ -48,31 +50,61 @@ async def drive_to_target():
             if abs(a) > BEARING_THRESH + distance/10:
                 if a >= 0: # Turn right
                     log.info('Turn right')
-                    await Autopilot.send('DriveSystem', 'RotateRight', MAX_SPEED/60)
+                    await Autopilot.send('DriveSystem', 'RotateRight', MAX_SPEED/40)
                 else: # Turn left
                     log.info('Turn left')
-                    await Autopilot.send('DriveSystem', 'RotateLeft', MAX_SPEED/60)
+                    await Autopilot.send('DriveSystem', 'RotateLeft', MAX_SPEED/40)
                 return
             log.info("distance from {} to {} = {}".format(position, waypoints[0], distance))
             if distance > GPS_DISTANCE_THRESH:
                 await Autopilot.send('DriveSystem', 'DriveForward', MAX_SPEED)
             else:
-                log.info('!!!!!!!HERE!!!!!!!!!!')
-                # We are close enough TODO: search for ball
-                Autopilot.storage.enabled = False
-                await Autopilot.send('DriveSystem', 'Stop', 0)
-                await Autopilot.publish("Autopilot", False)  # update WebUI
-                await Autopilot.publish("TargetReached", True)
-                Autopilot.storage.state = waiting
+                log.info('!!!!! Searching for ball !!!!!!!')
+                Autopilot.storage.state = search_for_ball
+                # Autopilot.storage.enabled = False
+                # await Autopilot.send('DriveSystem', 'Stop', 0)
+                # await Autopilot.publish("Autopilot", False)  # update WebUI
+                # await Autopilot.publish("TargetReached", True)
+                # Autopilot.storage.state = waiting
     else:
         Autopilot.storage.state = waiting
 
 
 async def search_for_ball():
-    pass
+    if Autopilot.storage.enabled:
+        ball_coords = await Autopilot.request('Navigation', 'BallPosition')
+        if ball_coords is not None:
+            Autopilot.storage.state = drive_to_ball
+        else:
+            await Autopilot.send('DriveSystem', 'RotateRight', MAX_SPEED/40)
+    else:
+        Autopilot.storage.state = waiting
 
 async def drive_to_ball():
-    pass
+    if Autopilot.storage.enabled:
+        ball_coords = await Autopilot.request('Navigation', 'BallPosition')
+        if ball_coords is not None:
+            if ball_coords['x'] > BALL_HORIZONTAL_THRESH:
+                log.info('Turn right')
+                await Autopilot.send('DriveSystem', 'RotateRight', MAX_SPEED/40)
+            elif ball_coords['x'] < -BALL_HORIZONTAL_THRESH:
+                log.info('Turn left')
+                await Autopilot.send('DriveSystem', 'RotateLeft', MAX_SPEED/40)
+            else:
+                if ball_coords['distance'] >= BALL_DISTANCE_THRESH:
+                    log.info('Driving to the ball: {}', ball_coords['distance'])
+                    await Autopilot.send('DriveSystem', 'DriveForward', MAX_SPEED)
+                else:
+                    log.info('!!!!!! Got to the ball !!!!!!!!')
+                    Autopilot.storage.enabled = False
+                    await Autopilot.send('DriveSystem', 'Stop', 0)
+                    await Autopilot.publish("Autopilot", False)  # update WebUI
+                    await Autopilot.publish("TargetReached", True)
+                    Autopilot.storage.state = waiting
+        else:
+            Autopilot.storage.state = search_for_ball
+    else:
+        Autopilot.storage.state = waiting
 
 
 Autopilot.storage.state = waiting
