@@ -96,7 +96,7 @@ async def loop():
                     await GPSdevice.publish('singlePointGPS',
                             [mean(lats), mean(longs)])
                 else:
-                    log.warning("Failed to take GPS averege", "WARNING")
+                    log.warning("Failed to take GPS averege")
                 msg = piksi.poll(MSG_VEL_NED)
                 if msg is not None:
                     await GPSdevice.publish("GPSVelocity", [msg.n/1000, msg.e/1000])

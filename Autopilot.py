@@ -10,8 +10,8 @@ Autopilot = Device('Autopilot', 'rover', network=config.network)
 LOOP_PERIOD = 0.1
 MIN_WHEEL_RPM = 1000
 MAX_SPEED = 2 # m/s
-BEARING_THRESH = 5 # degrees
-GPS_DISTANCE_THRESH = 5 # meters
+BEARING_THRESH = 10 # degrees
+GPS_DISTANCE_THRESH = 1 # meters
 
 ###### Initialization ########
 
@@ -42,15 +42,17 @@ async def drive_to_target():
             bearing = await Autopilot.request('Navigation', 'bearing', position, waypoints[0])
             bearing = bearing%360
             heading = await Autopilot.request('Navigation', 'RoverHeading')
+            distance = await Autopilot.request('Navigation', 'distance', position, waypoints[0])
             a = bearing - heading
             a = (a+180)%360 - 180 # find smallest angle difference
-            if abs(a) > BEARING_THRESH:
+            if abs(a) > BEARING_THRESH + distance/10:
                 if a >= 0: # Turn right
+                    log.info('Turn right')
                     await Autopilot.send('DriveSystem', 'RotateRight', MAX_SPEED/60)
                 else: # Turn left
+                    log.info('Turn left')
                     await Autopilot.send('DriveSystem', 'RotateLeft', MAX_SPEED/60)
                 return
-            distance = await Autopilot.request('Navigation', 'distance', position, waypoints[0])
             log.info("distance from {} to {} = {}".format(position, waypoints[0], distance))
             if distance > GPS_DISTANCE_THRESH:
                 await Autopilot.send('DriveSystem', 'DriveForward', MAX_SPEED)

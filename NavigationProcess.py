@@ -28,7 +28,7 @@ NavDevice = Device('Navigation', 'rover', network=config.network)
 
 NavDevice.storage.rover = Rover()
 # NavDevice.storage.waypoints = [(52.132866, -106.628012)]
-NavDevice.storage.waypoints = [(52.132774, -106.627528)]
+NavDevice.storage.waypoints = [(52.132458, -106.627159)]
 
 @NavDevice.on('*/FilteredGPS')
 @NavDevice.on('*/GPSPosition')
@@ -42,7 +42,7 @@ def update_heading(event, data):
 
 @NavDevice.on('*/CompassDataMessage')
 def compas_callback(event, data):
-    NavDevice.storage.rover.heading = data['heading']+10.26667 #magnetic declination offset 10.58333 for Hanksville
+    NavDevice.storage.rover.heading = data['heading'] #magnetic declination offset 10.58333 for Hanksville 10.26667 for SK
     NavDevice.storage.rover.pitch = data['pitch']
     NavDevice.storage.rover.roll = data['roll']
 
