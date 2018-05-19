@@ -8,21 +8,30 @@ import math
 import numpy as np
 import sys
 import cv2
+import time
+
 
 def main():
+   
     # Create a PyZEDCamera object
     zed = zcam.PyZEDCamera()
-
+    
     # Create a PyInitParameters object and set configuration parameters
     init_params = zcam.PyInitParameters()
     init_params.depth_mode = sl.PyDEPTH_MODE.PyDEPTH_MODE_QUALITY  # Use PERFORMANCE depth mode
     init_params.coordinate_units = sl.PyUNIT.PyUNIT_MILLIMETER  # Use milliliter units (for depth measurements)
-
+    
     # Open the camera
     err = zed.open(init_params)
     if err != tp.PyERROR_CODE.PySUCCESS:
-        exit(1)
+        print('error')
+        exit(1) 
+    import pycuda.autoinit
+    import pycuda.driver as cuda
 
+    from pycuda.compiler import SourceModule
+    
+    
     # Create and set PyRuntimeParameters after opening the camera
     runtime_parameters = zcam.PyRuntimeParameters()
     runtime_parameters.sensing_mode = sl.PySENSING_MODE.PySENSING_MODE_FILL  # Use STANDARD sensing mode
@@ -33,8 +42,9 @@ def main():
     depth = core.PyMat()
     point_cloud = core.PyMat()
     depth_display = core.PyMat()
-
+    
     while True:
+        starttime = time.time()
         # A new image is available if grab() returns PySUCCESS
         if zed.grab(runtime_parameters) == tp.PyERROR_CODE.PySUCCESS:
             # Retrieve left image
@@ -45,13 +55,36 @@ def main():
             zed.retrieve_measure(depth, sl.PyMEASURE.PyMEASURE_DEPTH)
             # Retrieve colored point cloud. Point cloud is aligned on the left image.
             zed.retrieve_measure(point_cloud, sl.PyMEASURE.PyMEASURE_XYZRGBA)
-            #print(i)
-            #points = point_cloud.get_data()
-            #points = points.reshape(-1,4)
-            #points = points[:,0:3]
-            #points = points[~np.isnan(points).any(axis=1)]
-            #fname = format(i,'3d')+'.txt'
-            #np.savetxt(fname,points)
+            
+            mod = SourceModule("""
+            #include <stdio.h>
+            __global__ void filterPoints(int * result,float *points,int size, float minX,float maxX,float minY,float maxY,float maxZ)
+            {
+            const int i = threadIdx.x+blockIdx.x*blockDim.x;
+            if (i<size)
+                result[i] = (points[3*i]>minX && points[3*i] <maxX && points[3*i+1]>minY && points[3*i+1] <maxY && points[3*i+2] <maxZ);
+            }
+            """)
+
+            
+
+            points = point_cloud.get_data()
+            points = points.reshape(-1,4)
+            points = points[:,0:3]
+            points = points[~np.isnan(points).any(axis=1)]
+            points = points.astype(np.float32)
+            points_gpu = cuda.mem_alloc(points.nbytes)
+            cuda.memcpy_htod(points_gpu,points)
+            dataSize = points[:,0].shape[0]
+            result = np.zeros(dataSize,dtype = np.int32)
+            result_gpu = cuda.mem_alloc(result.nbytes)
+            filterFunc = mod.get_function('filterPoints')
+            gridX = int(dataSize/1024)+1
+            filterFunc(result_gpu,points_gpu,np.int32(dataSize),np.float32(-1000),np.float32(1000),np.float32(-1000),np.float32(1000),np.float32(5000),block=(1024,1,1),grid=(gridX, 1,1),shared = 0)
+            cuda.memcpy_dtoh(result,result_gpu)
+            #print(sum(result))
+            
+
             #get the distance in mm
             #distances = np.sqrt(points[:,:,0]*points[:,:,0]+points[:,:,1]*points[:,:,1]+points[:,:,2]*points[:,:,2])
             #find the closest point
@@ -61,6 +94,7 @@ def main():
             key = cv2.waitKey(5)
               
             i = i + 1
+            print(time.time()-starttime)
             
             sys.stdout.flush()
 
