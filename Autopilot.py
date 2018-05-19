@@ -53,7 +53,6 @@ async def drive_to_target():
                     log.info('Turn left')
                     await Autopilot.send('DriveSystem', 'RotateLeft', MAX_SPEED/60)
                 return
-<<<<<<< HEAD
             log.info("distance from {} to {} = {}".format(position, waypoints[0], distance))
             if distance > GPS_DISTANCE_THRESH:
                 await Autopilot.send('DriveSystem', 'DriveForward', MAX_SPEED)
