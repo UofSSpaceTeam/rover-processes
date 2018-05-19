@@ -1,16 +1,18 @@
+import logging
 from robocluster import Device
-
-from roverutil import getnetwork
+import config
 
 '''
 Just prints everything it published from the robocluster network.
 '''
 
-printer = Device('printer', 'rover', network=getnetwork())
+log = config.getLogger()
+
+printer = Device('printer', 'rover', network=config.network)
 
 @printer.on('*/*')
 def print_it(event, data):
-    print(event, data)
+    log.info("{}: {}".format(event, data))
 
 
 printer.start()

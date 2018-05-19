@@ -4,7 +4,9 @@ from math import expm1 # e**x - 1  for rpm/current curves
 from math import exp
 from robocluster import Device
 
-from roverutil import getnetwork
+import config
+
+log = config.getLogger()
 
 RPM_TO_ERPM = 12*19 # 12 poles, 19:1 gearbox
 
@@ -41,7 +43,7 @@ def austins_curve(f):
         return -a
 
 
-DriveDevice = Device('DriveSystem', 'rover', network=getnetwork())
+DriveDevice = Device('DriveSystem', 'rover', network=config.network)
 
 # Initialize setup variables
 DriveDevice.storage.right_brake = False
@@ -142,7 +144,7 @@ async def setLeftWheelSpeed(rpm):
             rpm = max(left_rpm-d_rpm, -MAX_RPM)
     else:
         rpm = 0
-    print('Left', rpm)
+    log.debug('Left RPM: {}'.format(rpm))
     if DriveDevice.storage.api_enabled:
         DriveDevice.storage.left_rpm = rpm
         await DriveDevice.publish("wheelLF", {'SetRPM':DirectionConstants['wheelLF']*rpm})
@@ -165,7 +167,7 @@ async def setRightWheelSpeed(rpm):
             rpm = max(right_rpm-d_rpm, -MAX_RPM)
     else:
         rpm = 0
-    print('Right', rpm)
+    log.debug('Right RPM: {}'.format(rpm))
     if DriveDevice.storage.api_enabled:
         DriveDevice.storage.right_rpm = rpm
         await DriveDevice.publish("wheelRF", {'SetRPM':DirectionConstants['wheelRF']*rpm})
