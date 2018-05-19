@@ -53,6 +53,7 @@ async def drive_to_target():
                     log.info('Turn left')
                     await Autopilot.send('DriveSystem', 'RotateLeft', MAX_SPEED/60)
                 return
+<<<<<<< HEAD
             log.info("distance from {} to {} = {}".format(position, waypoints[0], distance))
             if distance > GPS_DISTANCE_THRESH:
                 await Autopilot.send('DriveSystem', 'DriveForward', MAX_SPEED)
@@ -60,6 +61,7 @@ async def drive_to_target():
                 log.info('!!!!!!!HERE!!!!!!!!!!')
                 # We are close enough TODO: search for ball
                 Autopilot.storage.enabled = False
+                await Autopilot.send('DriveSystem', 'Stop', 0)
                 await Autopilot.publish("Autopilot", False)  # update WebUI
                 await Autopilot.publish("TargetReached", True)
                 Autopilot.storage.state = waiting
