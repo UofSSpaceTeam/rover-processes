@@ -84,15 +84,17 @@ async def drive_to_ball():
     if Autopilot.storage.enabled:
         ball_coords = await Autopilot.request('Navigation', 'BallPosition')
         if ball_coords is not None:
-            if ball_coords['x'] > BALL_HORIZONTAL_THRESH:
+            img_width = ball_coords['width']
+            ball_x = ball_coords['x'] - img_width/2 # distance from center of img
+            if ball_x > BALL_HORIZONTAL_THRESH:
                 log.info('Turn right')
                 await Autopilot.send('DriveSystem', 'RotateRight', MAX_SPEED/40)
-            elif ball_coords['x'] < -BALL_HORIZONTAL_THRESH:
+            elif ball_x < -BALL_HORIZONTAL_THRESH:
                 log.info('Turn left')
                 await Autopilot.send('DriveSystem', 'RotateLeft', MAX_SPEED/40)
             else:
-                if ball_coords['distance'] >= BALL_DISTANCE_THRESH:
-                    log.info('Driving to the ball: {}', ball_coords['distance'])
+                if ball_coords['size'] >= BALL_DISTANCE_THRESH:
+                    log.info('Driving to the ball: {}', ball_coords['size'])
                     await Autopilot.send('DriveSystem', 'DriveForward', MAX_SPEED)
                 else:
                     log.info('!!!!!! Got to the ball !!!!!!!!')
