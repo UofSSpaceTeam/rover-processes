@@ -26,6 +26,7 @@ def main():
     if err != tp.PyERROR_CODE.PySUCCESS:
         print('error')
         exit(1) 
+    # Zed camera has to be open first before importing pycuda
     import pycuda.autoinit
     import pycuda.driver as cuda
 
@@ -36,8 +37,6 @@ def main():
     runtime_parameters = zcam.PyRuntimeParameters()
     runtime_parameters.sensing_mode = sl.PySENSING_MODE.PySENSING_MODE_FILL  # Use STANDARD sensing mode
 
-    # Capture 50 images and depth, then stop
-    i = 0
     image = core.PyMat()
     depth = core.PyMat()
     point_cloud = core.PyMat()
@@ -59,6 +58,7 @@ def main():
             mod = SourceModule("""
             #include <stdio.h>
             __global__ void filterPoints(int * result,float *points,int size, float minX,float maxX,float minY,float maxY,float maxZ)
+            // Checks whether the point is within a certain cube.
             {
             const int i = threadIdx.x+blockIdx.x*blockDim.x;
             if (i<size)
@@ -70,19 +70,35 @@ def main():
 
             points = point_cloud.get_data()
             points = points.reshape(-1,4)
-            points = points[:,0:3]
-            points = points[~np.isnan(points).any(axis=1)]
+            points = points[:,0:3] # get rid of the alpha field
+            points = points[~np.isnan(points).any(axis=1)] # Filter out non values
             points = points.astype(np.float32)
             points_gpu = cuda.mem_alloc(points.nbytes)
-            cuda.memcpy_htod(points_gpu,points)
+            cuda.memcpy_htod(points_gpu,points) # copy points into GPU
             dataSize = points[:,0].shape[0]
             result = np.zeros(dataSize,dtype = np.int32)
-            result_gpu = cuda.mem_alloc(result.nbytes)
+            result_gpu = cuda.mem_alloc(result.nbytes) # allocate memory for the result
             filterFunc = mod.get_function('filterPoints')
             gridX = int(dataSize/1024)+1
-            filterFunc(result_gpu,points_gpu,np.int32(dataSize),np.float32(-1000),np.float32(1000),np.float32(-1000),np.float32(1000),np.float32(5000),block=(1024,1,1),grid=(gridX, 1,1),shared = 0)
-            cuda.memcpy_dtoh(result,result_gpu)
-            #print(sum(result))
+            xmin = -1000
+            xmax = 1000
+            ymin = -1000
+            ymax = 1000
+            zmax = 5000
+            filterFunc(
+                    result_gpu,
+                    points_gpu,np.int32(dataSize),
+                    np.float32(xmin),
+                    np.float32(xmax),
+                    np.float32(ymin),
+                    np.float32(ymax),
+                    np.float32(zmax),
+                    block=(1024,1,1),
+                    grid=(gridX, 1,1),
+                    shared = 0)
+            cuda.memcpy_dtoh(result,result_gpu) # copy result from GPU
+            # Each point in result is Bool: 0: not in the cube, 1: in the cube.
+            print(sum(result))
             
 
             #get the distance in mm
@@ -93,7 +109,6 @@ def main():
             cv2.imshow("depth map", depth_display.get_data()) 
             key = cv2.waitKey(5)
               
-            i = i + 1
             print(time.time()-starttime)
             
             sys.stdout.flush()
