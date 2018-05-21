@@ -15,8 +15,9 @@ TOP_ONE_ROT = 65.7 # mm
 BOTTOM_ONE_ROT = 0
 BOTTOM_VERT_DISTANCE = 0
 START_ROT_DISTANCE = 0
-DRILL_DUTY_CYCLE = 0.1 
-ROTATION_SPEED = 20
+DRILL_RAISE_DUTY_CYCLE = 0.4*1e5    # at 12 volts
+DRILL_LOWER_DUTY_CYCLE = 0.3*1e5    # at 12 volts
+ROTATION_DUTY_CYCLE = 0.2*1e5       # at 12 volts
 SAMPLE_HOLDER_HEIGHT = 100
 STOP_ABOVE_GROUND = 1 # mm
 
@@ -58,21 +59,23 @@ async def hard_stop():
 
 async def raise_top():    
     drill.storage.top_motor_movement = 1
-    await drill.publish('DrillTop', {'SetDutyCycle':int((-1)*0.5*1e5)})
+    await drill.publish('DrillTop', {'SetDutyCycle':int((-1)*DRILL_RAISE_DUTY_CYCLE)})
     await drill.sleep(0.01)
 
 async def raise_bottom():
     drill.storage.bottom_motor_movement = 1
-    await drill.publish('DrillBottom', {'SetDutyCycle':(-1)*DRILL_DUTY_CYCLE})
+    await drill.publish('DrillBottom', {'SetDutyCycle':int((-1)*DRILL_RAISE_DUTY_CYCLE)})
+    await drill.sleep(0.01)
 
 async def lower_top():
-        drill.storage.top_motor_movement = 2
-        await drill.publish('DrillTop', {'SetDutyCycle':int(3*DRILL_DUTY_CYCLE*1e5)})
-        await drill.sleep(0.01)
+    drill.storage.top_motor_movement = 2
+    await drill.publish('DrillTop', {'SetDutyCycle':int(DRILL_LOWER_DUTY_CYCLE)})
+    await drill.sleep(0.01)
 
 async def lower_bottom():
     drill.storage.bottom_motor_movement = 2
-    await drill.publish('DrillBottom', {'SetDutyCycle':DRILL_DUTY_CYCLE})
+    await drill.publish('DrillBottom', {'SetDutyCycle':int(DRILL_LOWER_DUTY_CYCLE)})
+    await drill.sleep(0.01)
 
 async def stop_top():
     await drill.publish('DrillTop', {'SetDutyCycle':0})
@@ -82,14 +85,16 @@ async def stop_top():
 async def stop_bottom():
     await drill.publish('DrillBottom', {'SetDutyCycle':0})
     drill.storage.bottom_motor_movement = 0
+    await drill.sleep(0.01)
 
 async def start_rotation():
     drill.storage.rotating = True
-    await drill.publish('DrillSpin', {'SetRPM':ROTATION_SPEED})
+    await drill.publish('DrillSpin', {'SetDutyCycle':int(ROTATION_DUTY_CYCLE)})
+    await drill.sleep(0.01)
 
 async def stop_rotation():
-    await drill.publish('DrillSpin', {'SetRPM':0})
-    print('published stop')
+    await drill.publish('DrillSpin', {'SetDutyCycle':0})
+    await drill.sleep(0.01)
     drill.storage.rotating = False
 
 async def go_home():
@@ -115,14 +120,14 @@ async def take_sample():
     bottom_lower_start = time.time()
     while drill.storage.carousel_position == 'HOME' and drill.storage.bottom_distance <= BOTTOM_VERT_DISTANCE:
         lower_bottom()
-        drill.storage.bottom_distance = BOTTOM_ONE_ROT*(DRILL_SPEED/60)*(time.time() - bottom_lower_start)
+        #drill.storage.bottom_distance = BOTTOM_ONE_ROT*(DRILL_SPEED/60)*(time.time() - bottom_lower_start)
         if drill.storage.bottom_distance > START_ROT_DISTANCE:
             start_rotation()
 
     bottom_raise_start = time.time()
     while drill.storage.carousel_position == 'HOME' and drill.storage.bottom_distance >= 0:
         raise_bottom()
-        drill.storage.bottom_distance -= BOTTOM_ONE_ROT*(DRILL_SPEED/60)*(time.time() - bottom_raise_start)
+        #drill.storage.bottom_distance -= BOTTOM_ONE_ROT*(DRILL_SPEED/60)*(time.time() - bottom_raise_start)
         if drill.storage.home_switch == True:
             break
         if drill.storage.bottom_distance < START_ROT_DISTANCE:
@@ -131,7 +136,7 @@ async def take_sample():
     top_raise_start = time.time()
     while drill.storage.carousel_position == 'HOME' and drill.storage.top_distance >= 0:
         raise_top()
-        drill.storage.top_distance -= TOP_ONE_ROT*(DRILL_SPEED/60)*(time.time() - top_raise_start)
+        #drill.storage.top_distance -= TOP_ONE_ROT*(DRILL_SPEED/60)*(time.time() - top_raise_start)
         if drill.storage.home_switch == True:
             break
 
@@ -168,7 +173,7 @@ async def update_carousel_position(event, data):
     drill.storage.carousel_position = data
 
 ### BROADCASTS CURRENT DRILL STATE ###
-#@drill.on
+@drill.on
 async def broadcast_drill_state():
     await drill.publish('DrillSpinState', is_spinning())
     await drill.publish('DrillTopState', top_is_moving())
@@ -179,6 +184,7 @@ async def broadcast_drill_state():
 ### MAIN TASK ###
 #@drill.task
 async def main_task():
+    await drill.sleep(2)
     await wait()   
     await go_home()
     await take_sample()
@@ -197,14 +203,18 @@ async def test_task():
     drill.storage.carousel_position = 'EMPTY'
     start = time.time()
     x = 0
-    while (x - start) <= 3:
+    while (x - start) <= 4:
         await lower_top()
         x = time.time()
     await stop_top()
     await drill.sleep(3)
-    while (x - start) <= 7:
+    while (x - start) <= 8:
         await raise_top()
         x = time.time()
+    while (x - start) <= 10:
+        await start_rotation()
+        x = time.time()
+    await stop_rotation()
 
 drill.start()
 drill.wait()
