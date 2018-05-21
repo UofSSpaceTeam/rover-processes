@@ -3,13 +3,14 @@
 #   There should be a check added to make sure the rover isn't moving, and to block rover movement while drill is extended
 #   Constants still need to be set
 
+#   robocluster import was throwing up some errors, not sure exactly why
 from robocluster import Device
 import time 
 
 ### CREATE DEVICE ###
 drill = Device('Drill', 'rover')
 
-### CONSTANTS ###
+### CONSTANTS - NOT ALL SET AT THE MOMENT ###
 TOP_VERT_DISTANCE = 350 # mm
 TOP_ONE_ROT = 65.7 # mm
 BOTTOM_VERT_DISTANCE = 0
@@ -26,7 +27,7 @@ drill.storage.rotating = False
 drill.storage.top_distance = 0
 drill.storage.bottom_distance = 0
 
-### METHODS, SORT OF ###
+### FUNCTIONS ###
 async def top_is_moving():
     if drill.storage.top_motor_movement == 1:
         return 'RAISING'
