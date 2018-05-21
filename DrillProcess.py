@@ -3,7 +3,6 @@
 #   There should be a check added to make sure the rover isn't moving, and to block rover movement while drill is extended
 #   Constants still need to be set
 
-#   robocluster import was throwing up some errors, not sure exactly why
 from robocluster import Device
 import time 
 
@@ -11,13 +10,14 @@ import time
 drill = Device('Drill', 'rover')
 
 ### CONSTANTS - NOT ALL SET AT THE MOMENT ###
-TOP_VERT_DISTANCE = 350 # mm
+TOP_VERT_DISTANCE = 150 #350 # mm
 TOP_ONE_ROT = 65.7 # mm
+BOTTOM_ONE_ROT = 0
 BOTTOM_VERT_DISTANCE = 0
 START_ROT_DISTANCE = 0
-DRILL_SPEED = 0
-ROTATION_SPEED = 0
-SAMPLE_HOLDER_HEIGHT = 0
+DRILL_SPEED = 10 # RPM
+ROTATION_SPEED = 20
+SAMPLE_HOLDER_HEIGHT = 100
 STOP_ABOVE_GROUND = 1 # mm
 
 ### INITIALIZTION ###
@@ -99,29 +99,34 @@ async def go_home():
     hard_stop()
 
 async def take_sample():
-    start = time.time()
+    top_lower_start = time.time()
     while drill.storage.carousel_position == 'HOME' and drill.storage.top_distance <= TOP_VERT_DISTANCE:
         lower_top()
-        drill.storage.top_distance = TOP_ONE_ROT*(DRILL_SPEED/60)*(start - time.time())
-        # check with Carl if this will work
+        drill.storage.top_distance = TOP_ONE_ROT*(DRILL_SPEED/60)*(time.time() - top_lower_start)
         if drill.storage.distance_above_ground <= STOP_ABOVE_GROUND:
             stop_top()
             break
 
+    bottom_lower_start = time.time()
     while drill.storage.carousel_position == 'HOME' and drill.storage.bottom_distance <= BOTTOM_VERT_DISTANCE:
         lower_bottom()
+        drill.storage.bottom_distance = BOTTOM_ONE_ROT*(DRILL_SPEED/60)*(time.time() - bottom_lower_start)
         if drill.storage.bottom_distance > START_ROT_DISTANCE:
             start_rotation()
 
+    bottom_raise_start = time.time()
     while drill.storage.carousel_position == 'HOME' and drill.storage.bottom_distance >= 0:
         raise_bottom()
+        drill.storage.bottom_distance -= BOTTOM_ONE_ROT*(DRILL_SPEED/60)*(time.time() - bottom_raise_start)
         if drill.storage.home_switch == True:
             break
         if drill.storage.bottom_distance < START_ROT_DISTANCE:
             stop_rotation()
  
+    top_raise_start = time.time()
     while drill.storage.carousel_position == 'HOME' and drill.storage.top_distance >= 0:
         raise_top()
+        drill.storage.top_distance -= TOP_ONE_ROT*(DRILL_SPEED/60)*(time.time() - top_raise_start)
         if drill.storage.home_switch == True:
             break
 
@@ -153,12 +158,12 @@ async def wait():
         time.sleep(0.5)
 
 ### POLLS CAROUSEL POSITION ###
-@drill.on('*/carousel_home')
+#@drill.on('*/carousel_home')
 async def update_carousel_position(event, data):
     drill.storage.carousel_position = data
 
 ### BROADCASTS CURRENT DRILL STATE ###
-@drill.on
+#@drill.on
 async def broadcast_drill_state():
     await drill.publish('DrillSpinState', is_spinning())
     await drill.publish('DrillTopState', top_is_moving())
@@ -166,9 +171,9 @@ async def broadcast_drill_state():
     await drill.publish('DrillTopPosition', drill.storage.top_distance)
     await drill.publish('DrillBottomPosition', drill.storage.bottom_distance)
 
-### MAIN LOOP, PERFORMS TASK ###
-@drill.task
-async def main_loop():
+### MAIN TASK ###
+#@drill.task
+async def main_task():
     wait()   
     go_home()
     take_sample()
@@ -180,7 +185,17 @@ async def main_loop():
     empty_drill()
     go_home()
 
-     
+### TEST TASK ###
+@drill.task
+async def test_task():
+    drill.storage.carousel_position == 'EMPTY'
+    #go_home()
+    empty_drill()
+    #start_rotation()
+    #time.sleep(5)
+    #stop_rotation()
+
+
 
 
 
