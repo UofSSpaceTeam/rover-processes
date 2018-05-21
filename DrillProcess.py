@@ -58,7 +58,8 @@ async def hard_stop():
 
 async def raise_top():    
     drill.storage.top_motor_movement = 1
-    await drill.publish('DrillTop', {'SetDutyCycle':(-1)*DRILL_DUTY_CYCLE})
+    await drill.publish('DrillTop', {'SetDutyCycle':int((-1)*DRILL_DUTY_CYCLE*1e5)})
+    await drill.sleep(0.01)
 
 async def raise_bottom():
     drill.storage.bottom_motor_movement = 1
@@ -66,7 +67,8 @@ async def raise_bottom():
 
 async def lower_top():
         drill.storage.top_motor_movement = 2
-        await drill.publish('DrillTop', {'SetDutyCycle':DRILL_DUTY_CYCLE})
+        await drill.publish('DrillTop', {'SetDutyCycle':int(DRILL_DUTY_CYCLE*1e5)})
+        await drill.sleep(0.01)
 
 async def lower_bottom():
     drill.storage.bottom_motor_movement = 2
@@ -75,6 +77,7 @@ async def lower_bottom():
 async def stop_top():
     await drill.publish('DrillTop', {'SetDutyCycle':0})
     drill.storage.top_motor_movement = 0
+    await drill.sleep(0.01)
 
 async def stop_bottom():
     await drill.publish('DrillBottom', {'SetDutyCycle':0})
@@ -197,6 +200,7 @@ async def test_task():
     while (x - start) <= 3:
         await lower_top()
         x = time.time()
+    await stop_top()
     await drill.sleep(3)
     while (x - start) <= 9:
         await raise_top()
