@@ -30,7 +30,7 @@ def getLogger():
     # Console logging
     console_log = logging.StreamHandler()
     console_log.setFormatter(formatter)
-    console_log.setLevel(logging.INFO)
+    console_log.setLevel(logging.DEBUG)
     console_log.addFilter(log_filter)
 
     # File logging

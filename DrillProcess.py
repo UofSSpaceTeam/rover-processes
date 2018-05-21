@@ -26,6 +26,7 @@ drill.storage.bottom_motor_movement = 0
 drill.storage.rotating = False
 drill.storage.top_distance = 0
 drill.storage.bottom_distance = 0
+drill.storage.carousel_position = 'EMPTY'
 
 ### FUNCTIONS ###
 async def top_is_moving():
@@ -85,6 +86,7 @@ async def start_rotation():
 
 async def stop_rotation():
     await drill.publish('DrillSpin', {'SetRPM':0})
+    print('published stop')
     drill.storage.rotating = False
 
 async def go_home():
@@ -144,12 +146,12 @@ async def deposit_sample():
 
 async def empty_drill():
     if drill.storage.carousel_position == 'EMPTY':
-        stop_rotation()
+        await stop_rotation()
         while drill.storage.top_distance <= SAMPLE_HOLDER_HEIGHT:
-            lower_top()
-        time.sleep(5)
+            await lower_top()
+        await drill.sleep(5)
         while drill.storage.top_distance >= 0:
-            raise_top()
+            await raise_top()
             if drill.storage.home_switch == True:
                 break
 
@@ -174,23 +176,24 @@ async def broadcast_drill_state():
 ### MAIN TASK ###
 #@drill.task
 async def main_task():
-    wait()   
-    go_home()
-    take_sample()
-    go_home()
-    wait()
-    deposit_sample()
-    go_home()
-    wait()
-    empty_drill()
-    go_home()
+    await wait()   
+    await go_home()
+    await take_sample()
+    await go_home()
+    await wait()
+    await deposit_sample()
+    await go_home()
+    await wait()
+    await empty_drill()
+    await go_home()
 
 ### TEST TASK ###
 @drill.task
 async def test_task():
-    drill.storage.carousel_position == 'EMPTY'
+    await drill.sleep(2)
+    drill.storage.carousel_position = 'EMPTY'
     #go_home()
-    empty_drill()
+    await empty_drill()
     #start_rotation()
     #time.sleep(5)
     #stop_rotation()
