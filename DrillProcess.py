@@ -155,7 +155,7 @@ async def empty_drill():
 
 async def wait():
     while drill.storage.carousel_position == 'AWAY':
-        time.sleep(0.5)
+        drill.sleep(0.5)
 
 ### POLLS CAROUSEL POSITION ###
 #@drill.on('*/carousel_home')
@@ -195,6 +195,8 @@ async def test_task():
     #time.sleep(5)
     #stop_rotation()
 
+drill.start()
+drill.wait()
 
 
 
