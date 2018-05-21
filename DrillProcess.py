@@ -17,7 +17,7 @@ BOTTOM_VERT_DISTANCE = 0
 START_ROT_DISTANCE = 0
 DRILL_RAISE_DUTY_CYCLE = 0.4*1e5    # at 12 volts
 DRILL_LOWER_DUTY_CYCLE = 0.3*1e5    # at 12 volts
-ROTATION_DUTY_CYCLE = 0.2*1e5       # at 12 volts
+ROTATION_SPEED = 2e3                # at 12 volts
 SAMPLE_HOLDER_HEIGHT = 100
 STOP_ABOVE_GROUND = 1 # mm
 
@@ -89,11 +89,11 @@ async def stop_bottom():
 
 async def start_rotation():
     drill.storage.rotating = True
-    await drill.publish('DrillSpin', {'SetDutyCycle':int(ROTATION_DUTY_CYCLE)})
+    await drill.publish('DrillSpin', {'SetRPM':int(ROTATION_SPEED)})
     await drill.sleep(0.01)
 
 async def stop_rotation():
-    await drill.publish('DrillSpin', {'SetDutyCycle':0})
+    await drill.publish('DrillSpin', {'SetRPM':0})
     await drill.sleep(0.01)
     drill.storage.rotating = False
 
@@ -211,7 +211,8 @@ async def test_task():
     while (x - start) <= 8:
         await raise_top()
         x = time.time()
-    while (x - start) <= 10:
+        await drill.sleep(3)
+    while (x - start) <= 13:
         await start_rotation()
         x = time.time()
     await stop_rotation()
