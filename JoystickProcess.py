@@ -74,9 +74,9 @@ async def every():
 
     await JoystickDevice.publish('dpad', dpad)
 
-    print('left: ' + str(left))
-    print('right: ' + str(right))
-    print('trig: ' + str(trig))
+    log.debug('left stick: ' + str(left))
+    log.debug('right stick: ' + str(right))
+    log.debug('trigger: ' + str(trig))
 
 try:
     JoystickDevice.start()
