@@ -2,6 +2,9 @@
 #   Should not be able to operate unless carousel is in certain positions
 #   There should be a check added to make sure the rover isn't moving, and to block rover movement while drill is extended
 #   Constants still need to be set
+#   top motor = motor controlling stage 1 of drill
+#   bottom motor = motor controlling stage 2 of drill
+#   should change motor naming scheme if time
 
 from robocluster import Device
 import time 
@@ -212,7 +215,7 @@ async def test_task():
         await raise_top()
         x = time.time()
         await drill.sleep(3)
-    while (x - start) <= 13:
+    while (x - start) <= 15:
         await start_rotation()
         x = time.time()
     await stop_rotation()
