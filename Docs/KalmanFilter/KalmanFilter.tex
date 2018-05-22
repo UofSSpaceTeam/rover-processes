@@ -1,0 +1,510 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% University/School Laboratory Report
+% LaTeX Template
+% Version 3.1 (25/3/14)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Linux and Unix Users Group at Virginia Tech Wiki 
+% (https://vtluug.org/wiki/Example_LaTeX_chem_lab_report)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass{article}
+
+\usepackage[version=3]{mhchem} % Package for chemical equation typesetting
+\usepackage{siunitx} % Provides the \SI{}{} and \si{} command for typesetting SI units
+\usepackage{graphicx} % Required for the inclusion of images
+\usepackage{natbib} % Required to change bibliography style to APA
+\usepackage{amsmath} % Required for some math elements 
+\usepackage{verbatim}%enables multi line commnets \begin{comment} \end{comment}
+\usepackage{float}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=magenta,      
+    urlcolor=blue,
+}
+\urlstyle{same}
+
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Python,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+
+\setlength\parindent{25pt} % Removes all indentation from paragraphs
+
+\renewcommand{\labelenumi}{\alph{enumi}.} % Make numbering in the enumerate environment by letter rather than number (e.g. section 6)
+
+%\usepackage{times} % Uncomment to use the Times New Roman font
+%\textwidth = 400pt
+\textheight = 630pt
+\voffset = -50pt
+
+
+%----------------------------------------------------------------------------------------
+%	DOCUMENT INFORMATION
+%----------------------------------------------------------------------------------------
+
+\title{Kalman Filter} % Title
+
+\author{Skylar \textsc{Koroluk}} % Author name
+
+\date{\today} % Date for the report
+
+\begin{document}
+
+\maketitle % Insert the title, author and date
+
+% If you wish to include an abstract, uncomment the lines below
+\begin{abstract}
+This document serves as both general documentation of the KalmanFilterProcess2.py program implemented within rover-processes for the University of Saskatchewan Space Design Team and as a general explanation of how a basic Kalman Filter works.
+\end{abstract}
+
+%----------------------------------------------------------------------------------------
+%	SECTION 1
+%----------------------------------------------------------------------------------------
+\tableofcontents
+
+\section{What is a Kalman Filter}
+\section{Variables Used}
+\textbf{Note}: Short single letter variable names were chosen to match popular convention. This also makes it easier to follow the mathematics that the code is heavily reliant on. 
+\subsection{Main Variables}
+\paragraph{Q}
+Process noise covariance matrix: A matrix containing the variances and covariances of the noise in the different parameters of the state model.
+\paragraph{R}
+Observation noise covariance matrix: A matrix containing the variances and covariances of the noise in the different parameters of the observation measurements.\footnote{In KalmanFilterProcess2.py this is the variances and covariances of the noise in the GPS measurements. The values for this matrix were calculated in RoverStatistics.py}
+\paragraph{v}
+Observation noise model: The noise in the observation.\footnote{For KalmanFilterProcess2.py this was created with more of an iterative process rather than any mathematical process. This is one of the areas that I plan to look into more but for now it is fine.}
+\paragraph{F}
+State transition model: Applied to the previous state in order to calculate the current state. This should never be changed in KalmanFIlterProcess2.py.
+\paragraph{B}
+Control input model: Applied to the control inputs vector \textbf{u} to properly use the sensor data in the model. This should never be changed in KalmanFIlterProcess2.py.
+\paragraph{H}
+Observation model: Maps the state vector to the matrix state space dealt with in the calculations. This should never be changed in KalmanFIlterProcess2.py.
+\paragraph{P\_pp}
+Previous (predicted) process error covariance matrix: The previous "true" estimated accuracy of the state. 
+\paragraph{x\_pp}
+Previous (predicted) state vector: The previous "true" state.
+\paragraph{u}
+Control inputs vector: The control inputs describing the change of the state.\footnote{In KalmanFilterProcess2.py this is accelerometer readings.}
+\paragraph{P\_cp}
+Current (predicted) process error covariance matrix: Updated process error covariance matrix based on the state transition model, control input model, and control inputs (\textbf{F}, \textbf{B}, \textbf{u}).
+\paragraph{x\_cp}
+Current (predicted) state vector: Updates state  based on the state transition model, control input model, and control inputs (\textbf{F}, \textbf{B}, \textbf{u}).
+\paragraph{z}
+Observation Vector: Observational measurements of location, usually from GPS based measurements. \footnote{In the KalmanFilterProcess2.py program they are Geographic Coordinate System (latitude/longitude) measurements converted to Universal Transverse Mercator coordinates (northing/easting), using the UTM \href{https://pypi.org/project/utm/}{package} in python  }  
+\paragraph{K}
+Kalman gain matrix: A value between 0 and 1 that gives a "weighting of trust" to either the the mathematical model or the observation, depending on the relative errors of both. A Kalman gain of zero means that only the mathematical model is used whereas a gain of 1 means that only the observation is used.
+\paragraph{P\_cc}
+Current (calculated/updated) process error covariance matrix: Final "true" process covariance matrix.
+\paragraph{x\_cc}
+Current (calculated/updated) state vector: Final "true" state.
+
+\subsection{Other Variables}
+\paragraph{zone\_number/zone\_letter}
+In the UTM coordinate system the earth is split up into different zones that are distinguishable by number and letter. These values are needed when converting from UTM to GCS and are found during the conversion from GCS to UTM using the UTM package. 
+\paragraph{I}
+Identity matrix: Common in linear algebra it is a matrix with 1's across the diagonal and zeros elsewhere.
+\paragraph{S}
+N/A: Intermediate value often used to simplify calculations.
+\paragraph{L}
+N/A: Intermediate value used to simplify calculations.
+\paragraph{y\_p}
+N/A: Intermediate value used to simplify calculations.
+
+
+
+
+
+
+
+ 
+
+%----------------------------------------------------------------------------------------
+%	SECTION 2
+%----------------------------------------------------------------------------------------
+
+\section{The Mathematics}
+%\begin{comment}
+\subsection{Setup}
+Firstly all the different static variables regarding the specific application of the filter must be created. Examples will be shown for filtering the location of a 2D restricted vehicle such as the USST mars rover.\par
+\paragraph{\textbf{F:}}
+$$
+\begin{bmatrix}
+    1 & 0 & \Delta t & 0\\
+    0 & 1 & 0 &  \Delta t\\
+    0 & 0 & 0 & 0\\
+    0 & 0 & 0 & 0
+\end{bmatrix}
+$$
+\paragraph{\textbf{B:}}
+$$
+\begin{bmatrix}
+    \frac{(\Delta t)^2}{2} & 0\\
+    0 & \frac{(\Delta t)^2}{2}\\
+    \Delta t & 0\\
+    0 & \Delta t
+\end{bmatrix}
+$$
+\paragraph{\textbf{H:}}
+$$
+\begin{bmatrix}
+    1 & 0 & 0 & 0\\
+    0 & 1 & 0 & 0\\
+    0 & 0 & 0 & 0\\
+    0 & 0 & 0 & 0
+\end{bmatrix}
+$$
+%\end{comment}
+
+
+\subsection{Predict Stage}
+In the prediction stage of the calculation the filter takes the previous calculated state and predicts a current location according to the control inputs\footnote{ex. for the rover the control inputs consist of accelerometer data during the last time step.} and the state transition model.
+\begin{equation}
+\textbf{x}_{cp}=\textbf{F}\textbf{x}_{pp}+\textbf{B}\textbf{u}
+\end{equation} 
+The same prediction/update is done for the process error covariance matrix.
+\begin{equation}
+\textbf{P}_{cp}=\textbf{F}\textbf{P}_{pp}\textbf{F}^T+\textbf{Q}
+\end{equation}
+
+\subsection{Update Stage}
+Next in the update stage the filter uses the observed location and the predicted location and calculates a weighted average where the "weight" is the Kalman Gain. Firstly the Kalman Gain is calculated using the current predicted process error covariance matrix and the observation noise covariance matrix.
+\begin{equation}
+\textbf{K} = \frac{\textbf{P}_{cp}\textbf{H}^T}{\textbf{R}+\textbf{H}\textbf{P}_{cp}\textbf{H}^T}
+\end{equation}
+Using the Kalman Gain and the observed state the final calculated "true" state and process error covariance matrix can be calculated.
+\begin{equation}
+\textbf{x}_{cc} =\textbf{x}_{cp} + \textbf{K}[\textbf{z}-\textbf{H}\textbf{x}_{cp}]
+\end{equation}
+\begin{equation}
+\textbf{P}_{cc}=[\textbf{I}-\textbf{K}\textbf{H}]\textbf{P}_{cp}[\textbf{I}-\textbf{K}\textbf{H}]^T+\textbf{K}\textbf{R}\textbf{K}^T
+\end{equation}
+In KalmanFilterProcess2.py these last three calculations are simplified with intermediate values as follows
+\begin{equation}
+\textbf{S} = \textbf{R}+\textbf{H}\textbf{P}_{cp}\textbf{H}^T
+\end{equation} 
+\begin{equation}
+\textbf{L} = \textbf{I}-\textbf{K}\textbf{H}
+\end{equation} 
+\begin{equation}
+\textbf{y}_p = \textbf{z}-\textbf{H}\textbf{x}_{cp}
+\end{equation}
+This simplifies equations (3)-(5) to 
+\begin{equation}
+\textbf{K} = \textbf{P}_{cp}\textbf{H}^T\textbf{S}^{-1}
+\end{equation}
+\begin{equation}
+\textbf{x}_{cc} =\textbf{x}_{cp} + \textbf{K}\textbf{y}_p
+\end{equation}
+\begin{equation}
+\textbf{P}_{cc}=\textbf{L}\textbf{P}_{cp}\textbf{L}^T+\textbf{K}\textbf{R}\textbf{K}^T
+\end{equation}
+The state vector $\textbf{x}_{cc}$ is the "true" state that is returned by the filter. In KalmanFilterProcess2.py this vector contains the x and y (East and North) positions and velocities. The positions are then passed through the UTM converter to convert the UTM positions back into GCS GPS coordinates 
+
+\begin{comment}
+\section{Functions Used}
+\end{comment}
+
+
+
+%----------------------------------------------------------------------------------------
+%	SECTION 3
+%----------------------------------------------------------------------------------------
+
+
+
+%----------------------------------------------------------------------------------------
+%	SECTION 4
+%----------------------------------------------------------------------------------------
+
+
+
+
+%----------------------------------------------------------------------------------------
+%	SECTION 5
+%----------------------------------------------------------------------------------------
+
+
+%----------------------------------------------------------------------------------------
+%	SECTION 6
+%----------------------------------------------------------------------------------------
+
+
+
+
+
+%----------------------------------------------------------------------------------------
+%	SECTION 7
+%----------------------------------------------------------------------------------------
+
+%----------------------------------------------------------------------------------------
+%	SECTION 7
+%----------------------------------------------------------------------------------------
+
+
+%----------------------------------------------------------------------------------------
+%	SECTION 8
+%----------------------------------------------------------------------------------------
+\section{Full Code}
+\begin{lstlisting}
+import numpy as np
+import utm as utm
+import statistics as stats
+from robocluster import Device
+import random as random
+import matplotlib.pyplot as plt
+import time
+
+KalmanFilter = Device('KalmanFilter', 'rover')
+
+DummyGPS = Device('DummyGPS', 'rover')
+# @DummyGPS.every('0.1s')
+async def dummy():
+    #await DummyGPS.publish('singlePointGPS', [51.00000+(random.randrange(400, 600)/1000000), 110.00000+(random.randrange(600, 800)/1000000)])
+    await DummyGPS.publish('singlePointGPS', [random.gauss(52.13255308, 0.0000699173), random.gauss(-106.6279284, 0.0000460515)])
+
+
+def create_covariance_of_process_noise(num_dimensions):
+    # this is currently completely manual
+    Q = np.eye(2 * num_dimensions)*0.005  # TODO: Figure out what this matrix actually is
+    return Q
+
+def create_covariance_of_observation_noise(num_dimensions):
+    # this is currently completely manual
+    # these values are taken from RoverGPSstatistics
+    R = np.zeros((2 * num_dimensions, 2 * num_dimensions))
+    R[0, 0] = 60.125
+    R[1, 1] = 60.125#10.308
+    R[0, 1] = 8.783
+    R[1, 0] = 8.783
+    return R
+
+def create_observation_noise(num_dimensions):
+    '''this is currently completely manual
+    drawn from zero mean white noise gaussian with covariance, R:v ~ N(0,R)'''
+    v = np.zeros((2 * num_dimensions, 1))  # TODO: Figure out what this vector/matrix is
+    v[0, 0] = 0.001
+    v[1, 0] = 0.001
+    return v
+
+def create_state_transition_model(time_step, num_dimensions):
+    '''takes a time step value and a number of dimensions and returns a state_transition model of the form
+    pos1, pos2, ..., posn, vel1, vel2, ..., veln. This is opposed to a model of the form pos1, vel1, pos2, vel2...'''
+    F = np.eye(2 * num_dimensions)
+    for index in range(num_dimensions):
+        F[index, index + 2] = time_step
+    return F
+
+def create_control_input_model(time_step, num_dimensions):
+    '''takes a time step value and a number of dimensions and returns a control input model of the form
+    pos1, pos2, ..., posn, vel1, vel2, ..., veln. This is opposed to a model of the form pos1, vel1, pos2, vel2...'''
+    B = np.zeros((2 * num_dimensions, num_dimensions))
+    for index in range(num_dimensions):
+        B[index, index] = 0.5 * (time_step ** 2)
+        B[index + 2, index] = time_step
+    return B
+
+def create_observation_model(num_dimensions):
+    '''takes the number of dimensions and creates the observation matrix used to map the true state to the observed
+    space. For our uses this is simply an identity matrix.'''
+    H = np.eye(2 * num_dimensions)
+    for index in range(num_dimensions):
+        H[index + 2, index + 2] = 0
+    return H
+
+def create_initial_process_error_covariance_matrix(num_dimensions, variance=0):
+    '''takes in the number of dimensions and the variable variance values and creates an initial process error
+    covariance matrix. If initial positions are known to a decent level of accuracy this is just a zero matrix
+    hence the default variance of 0.
+    If initial positions are not known then variance should be a list of variances of the form
+    pos1, pos2, ..., posn, vel1, vel2, ..., veln. This is opposed to a model of the form pos1, vel1, pos2, vel2...'''
+
+    P_pp = np.zeros((2 * num_dimensions, 2 * num_dimensions))
+    if variance != 0:
+        for index in range(2 * num_dimensions):
+            P_pp[index, index] = variance[index]
+    return P_pp
+
+def create_initial_state_vector(num_dimensions, initial_conditions = (0, 0)):
+    '''takes in the number of dimensions and the initial conditions and creates an initial state vector.
+    If initial positions are chosen to be entered then they should be in a list of the form
+    pos1, pos2, ..., posn, vel1, vel2, ..., veln. This is opposed to a model of the form pos1, vel1, pos2, vel2...
+    Initial positions should be entered but are optional. Ideally if no initial conditions are not entered then
+    the variance in the initial process error covariance matrix should have npne default variance parameters.
+    Don't believe this is actually too important though'''
+    x_pp = np.zeros((2 * num_dimensions, 1))
+    if initial_conditions != (0, 0):
+        for index in range(num_dimensions):
+            x_pp[index, 0] = initial_conditions[index]
+    return x_pp
+
+def create_control_inputs_vector(ax = 0, ay = 0):
+    '''takes accelerometer data and turns it into acceleration in northing easting and then creates a vector'''
+    u = np.array([[ax],[ay]])
+    #u = np.zeros((2, 1))  # TODO: actually calculate acceleration in northing easting and create vector
+    return u
+
+def predict(F, x_pp, B, u, P_pp, Q):
+    '''takes the previous (a posteriori) state estimate and previous (a posteriori) process error covariance matrix
+    and creates the predicted (a priori) state estimate and the predicted (a priori) estimate covariance'''
+    x_cp = np.dot(F, x_pp) + np.dot(B, u)
+    P_cp = np.dot(F, np.dot(P_pp, F.T)) + Q
+    return x_cp, P_cp
+
+def observation(gps_latitude, gps_longitude, H, v):
+    '''currently only for 2d system
+    takes GPS measurements and converts them to northing and easting values.'''
+    [x_meas, y_meas, zone_number, zone_letter] = utm.from_latlon(gps_latitude, gps_longitude)
+    x_m = np.mat([[x_meas], [y_meas], [0], [0]])
+    #cart_pos = [x_meas, y_meas]
+    zone_info = [zone_number, zone_letter]
+    z = np.dot(H, x_m) + v
+    return z, zone_info
+
+def update(num_dimensions, x_cp, P_cp, z, H, R):
+    '''takes in the (a priori) estimates along with the observations and appropriate matrices to calculate the true
+    state.'''
+    I = np.eye(len(x_cp))  # Identity matrix needed for calculations
+    y_p = z - np.dot(H, x_cp)  # measurement pre-fit residual
+    S = R + np.dot(H, np.dot(P_cp, H.T)) # pre_fit residual covariance
+    #S[S == 0] = 1
+    K = np.dot(P_cp, H.T) / S  # Optimal Kalman gain
+    K[np.isnan(K)] = 0
+    K[np.isinf(K)] = 0
+
+    x_cc = x_cp + np.dot(K, y_p)  # updated (a posteriori) state estimate
+    L = (I - np.dot(K, H))  # intermediate calculation needed for later
+    P_cc = np.dot(L, np.dot(P_cp, L.T)) + np.dot(K, np.dot(R, K.T)) # updated (a posteriori) estimate covariance
+    P_cc[np.isnan(P_cc)] = 0
+    y_c = z - np.dot(H, x_cc)  # measurement post-fit residual, we will probably never use this
+    return x_cc, P_cc
+
+
+@KalmanFilter.task
+def start_up_kalman_filter():
+    #User defined variables
+    #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    dt = 0.1  # time step (can be determined by rate that GPS readings come in)
+    num_dimensions = 2  # number of dimensions in model
+    ax = 0
+    ay = 0
+    initial = [52.132653, -106.628012]
+    initial_cart = utm.from_latlon(initial[0], initial[1])
+    KalmanFilter.storage.initial_cart = initial_cart
+    KalmanFilter.storage.dt = dt
+    KalmanFilter.storage.F = create_state_transition_model(dt, num_dimensions)
+    KalmanFilter.storage.B = create_control_input_model(dt, num_dimensions)
+    KalmanFilter.storage.H = create_observation_model(num_dimensions)
+    KalmanFilter.storage.x_pp = create_initial_state_vector(num_dimensions, initial)
+    KalmanFilter.storage.P_pp = create_initial_process_error_covariance_matrix(num_dimensions)
+    KalmanFilter.storage.Q = create_covariance_of_process_noise(num_dimensions)
+    KalmanFilter.storage.R = create_covariance_of_observation_noise(num_dimensions)
+    KalmanFilter.storage.v = create_observation_noise(num_dimensions)
+    KalmanFilter.storage.u = create_control_inputs_vector(ax, ay)
+
+@KalmanFilter.on('*/Acceleration')
+async def update_accel(event, data):
+    print(data)
+    KalmanFilter.storage.u = data
+
+
+@KalmanFilter.on('*/singlePointGPS')
+async def kalman_filter(event, data):
+    num_dimensions = 2
+    F = KalmanFilter.storage.F
+    B = KalmanFilter.storage.B
+    H = KalmanFilter.storage.H
+    x_pp = KalmanFilter.storage.x_pp
+    P_pp = KalmanFilter.storage.P_pp
+    Q = KalmanFilter.storage.Q
+    R = KalmanFilter.storage.R
+    v = KalmanFilter.storage.v
+    u = KalmanFilter.storage.u
+    initial_cart = KalmanFilter.storage.initial_cart
+
+    #u = create_control_inputs_vector(ax, ay) #is where the accelerometer values go
+    gps_latitude = data[0]  # Is this causing issues?
+    gps_longitude = data[1]
+    [x_cp, P_cp] = predict(F, x_pp, B, u, P_pp, Q)
+    [z, zone_info] = observation(gps_latitude, gps_longitude, H, v)  # This is where gps values are inputted
+    [x_cc, P_cc] = update(num_dimensions, x_cp, P_cp, z, H, R)
+    true_gps = utm.to_latlon(x_cc[0, 0], x_cc[1, 0], zone_info[0], zone_info[1], strict=False)  # this has the value we
+    cart_pos_final = [x_cc[0,0], x_cc[1,0]]
+    print("z", z)
+    print('raw: {}'.format(data))
+    print("                                             filtered: {}".format(true_gps))
+
+    ''' pres = 0.00001
+    dif_lat = abs(true_gps[0] - 52.132653)
+    dif_long = abs(true_gps[1] + 106.628012)
+    if dif_lat < pres:
+        print('Accurate Lat : ', dif_lat)
+    if dif_long < pres:
+        print('Accurate Long : ', dif_long)'''
+
+
+
+    await KalmanFilter.publish('FilteredGPS', true_gps)
+    KalmanFilter.storage.x_pp = x_cc
+    KalmanFilter.storage.P_pp = P_cc
+
+
+try:
+    KalmanFilter.start()
+    KalmanFilter.wait()
+    for i in range(0,350):
+        print("{},{}".format(KalmanFilter.storage.filtered_x[i], KalmanFilter.storage.filtered_y[i]))
+    print("New Data\n\n")
+    for i in range(0,350):
+        print("{},{}".format(KalmanFilter.storage.noise_x[i], KalmanFilter.storage.noise_y[i]))
+
+except KeyboardInterrupt:
+    KalmanFilter.stop()
+
+\end{lstlisting}
+
+
+
+%----------------------------------------------------------------------------------------
+%	BIBLIOGRAPHY
+%----------------------------------------------------------------------------------------
+\begin{comment}
+\bibliographystyle{apalike}
+
+\bibliography{sample}
+\end{comment}
+%----------------------------------------------------------------------------------------
+
+\end{document}

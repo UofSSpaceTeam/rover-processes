@@ -1,5 +1,7 @@
 import time
 import os
+from roverutil import getnetwork
+
 import pygame
 from robocluster import Device
 
@@ -9,7 +11,7 @@ os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.init()
 pygame.joystick.init()
 
-JoystickDevice = Device('JoystickDevice', 'rover')
+JoystickDevice = Device('JoystickDevice', 'rover', network=getnetwork())
 
 JoystickDevice.storage.joystick1 = pygame.joystick.Joystick(0)
 
@@ -40,6 +42,7 @@ async def every():
     pygame.event.get()
     left = [JoystickDevice.storage.joystick1.get_axis(0), JoystickDevice.storage.joystick1.get_axis(1)]
     right = [JoystickDevice.storage.joystick1.get_axis(rightHor), JoystickDevice.storage.joystick1.get_axis(rightVer)]
+<<<<<<< HEAD
     # windows treats two triggers as one value, so this code makes linux behave in the same way for the sake of consistency
     if os.name == 'nt':
         trig = JoystickDevice.storage.joystick1.get_axis(trigger)
@@ -53,6 +56,34 @@ async def every():
     print('left: ' + str(left))
     print('right: ' + str(right))
     print('trig: ' + str(trig))
+=======
+    triggerL = JoystickDevice.storage.joystick1.get_axis(2)
+    triggerR = JoystickDevice.storage.joystick1.get_axis(5)
+    buttonA = JoystickDevice.storage.joystick1.get_button(0)
+    buttonB = JoystickDevice.storage.joystick1.get_button(1)
+    buttonX = JoystickDevice.storage.joystick1.get_button(2)
+    buttonY = JoystickDevice.storage.joystick1.get_button(3)
+    bumperL = JoystickDevice.storage.joystick1.get_button(4)
+    bumperR = JoystickDevice.storage.joystick1.get_button(5)
+    dpad = JoystickDevice.storage.joystick1.get_hat(0)
+
+    await JoystickDevice.publish('joystick1', left)
+    await JoystickDevice.publish('joystick2', right)
+    await JoystickDevice.publish('triggerL', triggerL)
+    await JoystickDevice.publish('triggerR', triggerR)
+
+    await JoystickDevice.publish('buttonA', buttonA)
+    await JoystickDevice.publish('buttonB', buttonB)
+    await JoystickDevice.publish('buttonX', buttonX)
+    await JoystickDevice.publish('buttonY', buttonY)
+
+    await JoystickDevice.publish('bumperL', bumperL)
+    await JoystickDevice.publish('bumperR', bumperR)
+
+    await JoystickDevice.publish('dpad', dpad)
+
+
+>>>>>>> 2b7a6061f8c354e00fd7d217bf0b3824271168fa
 try:
     JoystickDevice.start()
     JoystickDevice.wait()
