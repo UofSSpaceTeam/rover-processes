@@ -46,7 +46,9 @@ async def every():
     if os.name == 'nt':
         trig = JoystickDevice.storage.joystick1.get_axis(trigger)
     else:
-        trig = 1 + JoystickDevice.storage.joystick1.get_axis(trigger[0]) + JoystickDevice.storage.joystick1.get_axis(trigger[1])
+        ltrig = (1 + JoystickDevice.storage.joystick1.get_axis(trigger[0]))/2
+        rtrig = (1 + JoystickDevice.storage.joystick1.get_axis(trigger[1]))/2
+        trig = rtrig - ltrig
 
     buttonA = JoystickDevice.storage.joystick1.get_button(0)
     buttonB = JoystickDevice.storage.joystick1.get_button(1)
