@@ -42,23 +42,12 @@ async def every():
     pygame.event.get()
     left = [JoystickDevice.storage.joystick1.get_axis(0), JoystickDevice.storage.joystick1.get_axis(1)]
     right = [JoystickDevice.storage.joystick1.get_axis(rightHor), JoystickDevice.storage.joystick1.get_axis(rightVer)]
-<<<<<<< HEAD
     # windows treats two triggers as one value, so this code makes linux behave in the same way for the sake of consistency
     if os.name == 'nt':
         trig = JoystickDevice.storage.joystick1.get_axis(trigger)
     else:
         trig = 1 + JoystickDevice.storage.joystick1.get_axis(trigger[0]) + JoystickDevice.storage.joystick1.get_axis(trigger[1])
 
-
-    await JoystickDevice.publish('joystick1', left)
-    await JoystickDevice.publish('joystick2', right)
-    await JoystickDevice.publish('trigger', trig)
-    print('left: ' + str(left))
-    print('right: ' + str(right))
-    print('trig: ' + str(trig))
-=======
-    triggerL = JoystickDevice.storage.joystick1.get_axis(2)
-    triggerR = JoystickDevice.storage.joystick1.get_axis(5)
     buttonA = JoystickDevice.storage.joystick1.get_button(0)
     buttonB = JoystickDevice.storage.joystick1.get_button(1)
     buttonX = JoystickDevice.storage.joystick1.get_button(2)
@@ -69,8 +58,7 @@ async def every():
 
     await JoystickDevice.publish('joystick1', left)
     await JoystickDevice.publish('joystick2', right)
-    await JoystickDevice.publish('triggerL', triggerL)
-    await JoystickDevice.publish('triggerR', triggerR)
+    await JoystickDevice.publish('trigger', trig)
 
     await JoystickDevice.publish('buttonA', buttonA)
     await JoystickDevice.publish('buttonB', buttonB)
@@ -82,8 +70,10 @@ async def every():
 
     await JoystickDevice.publish('dpad', dpad)
 
+    print('left: ' + str(left))
+    print('right: ' + str(right))
+    print('trig: ' + str(trig))
 
->>>>>>> 2b7a6061f8c354e00fd7d217bf0b3824271168fa
 try:
     JoystickDevice.start()
     JoystickDevice.wait()
