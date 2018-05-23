@@ -16,15 +16,42 @@ pygame.joystick.init()
 JoystickDevice = Device('JoystickDevice', 'rover', network=config.network)
 
 JoystickDevice.storage.joystick1 = pygame.joystick.Joystick(0)
+
 JoystickDevice.storage.joystick1.init()
 
+''' different operating systems have different values associated with joysticks & buttons on 
+an xbox360 controller, this function makes both os's work.
+
+Note: if on windows, should run this file in command prompt rather than a linux distro because
+i think the linux terminal doesnt have access to the same device info that command prompt does'''
+def buttonAssign():
+    if os.name == 'nt':
+        rightHoriz = 4
+        rightVert = 3
+        trigger = 2
+    else:
+        rightHoriz = 3
+        rightVert = 4
+        trigger = [2,5]
+    return rightHoriz, rightVert, trigger
+
 @JoystickDevice.every(LOOP_PERIOD)
-async def read_joystick():
+async def every():
+    # assigns os specific joystick assignments
+    rightHor = buttonAssign()[0]
+    rightVer = buttonAssign()[1]
+    trigger = buttonAssign()[2]
     pygame.event.get()
-    left = [JoystickDevice.storage.joystick1.get_axis(0), JoystickDevice.storage.joystick1.get_axis(1)]
-    right = [JoystickDevice.storage.joystick1.get_axis(3), JoystickDevice.storage.joystick1.get_axis(4)]
-    triggerL = JoystickDevice.storage.joystick1.get_axis(2)
-    triggerR = JoystickDevice.storage.joystick1.get_axis(5)
+    left = [JoystickDevice.storage.joystick1.get_axis(0), -JoystickDevice.storage.joystick1.get_axis(1)]
+    right = [JoystickDevice.storage.joystick1.get_axis(rightHor), -JoystickDevice.storage.joystick1.get_axis(rightVer)]
+    # windows treats two triggers as one value, so this code makes linux behave in the same way for the sake of consistency
+    if os.name == 'nt':
+        trig = JoystickDevice.storage.joystick1.get_axis(trigger)
+    else:
+        ltrig = (1 + JoystickDevice.storage.joystick1.get_axis(trigger[0]))/2
+        rtrig = (1 + JoystickDevice.storage.joystick1.get_axis(trigger[1]))/2
+        trig = rtrig - ltrig
+
     buttonA = JoystickDevice.storage.joystick1.get_button(0)
     buttonB = JoystickDevice.storage.joystick1.get_button(1)
     buttonX = JoystickDevice.storage.joystick1.get_button(2)
@@ -35,8 +62,7 @@ async def read_joystick():
 
     await JoystickDevice.publish('joystick1', left)
     await JoystickDevice.publish('joystick2', right)
-    await JoystickDevice.publish('triggerL', triggerL)
-    await JoystickDevice.publish('triggerR', triggerR)
+    await JoystickDevice.publish('trigger', trig)
 
     await JoystickDevice.publish('buttonA', buttonA)
     await JoystickDevice.publish('buttonB', buttonB)
@@ -48,6 +74,9 @@ async def read_joystick():
 
     await JoystickDevice.publish('dpad', dpad)
 
+    log.debug('left stick: ' + str(left))
+    log.debug('right stick: ' + str(right))
+    log.debug('trigger: ' + str(trig))
 
 try:
     JoystickDevice.start()

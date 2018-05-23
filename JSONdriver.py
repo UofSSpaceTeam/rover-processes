@@ -44,10 +44,13 @@ class JSONDriver:
     def read(self):
         '''Read a json message from the device'''
         # from Roveberrypy
-        size = self.ser.read(1) # this is assuming a message is less than 256 bytes
-        length = int.from_bytes(size, byteorder='big')
-        packet = self.ser.read(length)
-        return json.loads(packet.decode('utf8'))
+        try:
+            size = self.ser.read(1) # this is assuming a message is less than 256 bytes
+            length = int.from_bytes(size, byteorder='big')
+            packet = self.ser.read(length)
+            return json.loads(packet.decode('utf8'))
+        except json.decoder.JSONDecodeError:
+            return None
 
     def start_reader(self, callback):
         ''' Starts a background reader thread.
