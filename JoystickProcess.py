@@ -42,8 +42,8 @@ async def every():
     rightVer = buttonAssign()[1]
     trigger = buttonAssign()[2]
     pygame.event.get()
-    left = [JoystickDevice.storage.joystick1.get_axis(0), JoystickDevice.storage.joystick1.get_axis(1)]
-    right = [JoystickDevice.storage.joystick1.get_axis(rightHor), JoystickDevice.storage.joystick1.get_axis(rightVer)]
+    left = [JoystickDevice.storage.joystick1.get_axis(0), -JoystickDevice.storage.joystick1.get_axis(1)]
+    right = [JoystickDevice.storage.joystick1.get_axis(rightHor), -JoystickDevice.storage.joystick1.get_axis(rightVer)]
     # windows treats two triggers as one value, so this code makes linux behave in the same way for the sake of consistency
     if os.name == 'nt':
         trig = JoystickDevice.storage.joystick1.get_axis(trigger)
