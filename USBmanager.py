@@ -96,9 +96,12 @@ def init_json_driver(port, ser, l):
     try:
         leng = int.from_bytes(l, byteorder='big')
         packet = ser.read(leng)
+        log.debug('Received from {}: {}'.format(port, packet))
         msg = json.loads(packet.decode('utf8'))
         sub = msg['name']
     except KeyError:
+        return False
+    except json.decoder.JSONDecodeError:
         return False
     ser.close()
     driver = JSONDriver(port.device)
