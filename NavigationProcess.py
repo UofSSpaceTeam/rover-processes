@@ -30,6 +30,8 @@ NavDevice.storage.rover = Rover()
 # NavDevice.storage.waypoints = [(52.132866, -106.628012)]
 NavDevice.storage.waypoints = [(52.132458, -106.627159)]
 
+NavDevice.storage.ball = None
+
 @NavDevice.on('*/FilteredGPS')
 @NavDevice.on('*/GPSPosition')
 # @NavDevice.on('*/singlePointGPS')
@@ -49,6 +51,17 @@ def compas_callback(event, data):
 @NavDevice.on('*/AccelerometerMessage')
 async def accelerometer_callback(event, data):
     await NavDevice.publish('Acceleration', [data['x'], -data['y']])
+
+@NavDevice.on('*/OpenMV')
+def update_ball_info(event, data):
+    if data['x'] == -1 and data['y'] == -1:
+        NavDevice.storage.ball = None
+    else:
+        ball_x = data['x'] - data['sensorWidth']/2 # distance from center of img
+        ball_y = data['y'] - data['sensorHeight']/2
+        NavDevice.storage.ball = {'x':ball_x, 'y':ball_y, 'size':data['size']}
+    log.debug(NavDevice.storage.ball)
+
 
 @NavDevice.on_request('RoverPosition')
 def return_position():
@@ -75,6 +88,10 @@ def cacluate_distance(start, dest):
     p0 = GPSPosition(*start)
     p1 = GPSPosition(*dest)
     return p0.distance(p1)
+
+@NavDevice.on_request('BallPosition')
+def return_ball_pos():
+    return NavDevice.storage.ball
 
 
 NavDevice.start()

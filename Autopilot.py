@@ -12,13 +12,13 @@ MIN_WHEEL_RPM = 1000
 MAX_SPEED = 2 # m/s
 BEARING_THRESH = 10 # degrees
 GPS_DISTANCE_THRESH = 5 # meters
-BALL_HORIZONTAL_THRESH = 20 # pixels?
-BALL_DISTANCE_THRESH = 1
+BALL_HORIZONTAL_THRESH = 40 # pixels?
+BALL_SIZE_THRESH = 500
 
 ###### Initialization ########
 
 Autopilot.storage.state = None
-Autopilot.storage.enabled = False
+Autopilot.storage.enabled = True
 Autopilot.storage.waypoints = []
 
 
@@ -84,17 +84,15 @@ async def drive_to_ball():
     if Autopilot.storage.enabled:
         ball_coords = await Autopilot.request('Navigation', 'BallPosition')
         if ball_coords is not None:
-            img_width = ball_coords['width']
-            ball_x = ball_coords['x'] - img_width/2 # distance from center of img
-            if ball_x > BALL_HORIZONTAL_THRESH:
+            if ball_coords['x'] > BALL_HORIZONTAL_THRESH:
                 log.info('Turn right')
                 await Autopilot.send('DriveSystem', 'RotateRight', MAX_SPEED/40)
-            elif ball_x < -BALL_HORIZONTAL_THRESH:
+            elif ball_coords['x'] < -BALL_HORIZONTAL_THRESH:
                 log.info('Turn left')
                 await Autopilot.send('DriveSystem', 'RotateLeft', MAX_SPEED/40)
             else:
-                if ball_coords['size'] >= BALL_DISTANCE_THRESH:
-                    log.info('Driving to the ball: {}', ball_coords['size'])
+                if ball_coords['size'] <= BALL_SIZE_THRESH:
+                    log.info('Driving to the ball: {}'.format(ball_coords['size']))
                     await Autopilot.send('DriveSystem', 'DriveForward', MAX_SPEED)
                 else:
                     log.info('!!!!!! Got to the ball !!!!!!!!')
@@ -109,7 +107,7 @@ async def drive_to_ball():
         Autopilot.storage.state = waiting
 
 
-Autopilot.storage.state = waiting
+Autopilot.storage.state = drive_to_ball
 @Autopilot.every(LOOP_PERIOD)
 async def state_machine():
     log.debug(Autopilot.storage.state.__name__)
