@@ -20,6 +20,7 @@ BALL_SIZE_THRESH = 500
 Autopilot.storage.state = None
 Autopilot.storage.enabled = True
 Autopilot.storage.waypoints = []
+Autopilot.storage.last_seen = 'right'
 
 
 ######## State Machine ######
@@ -76,7 +77,12 @@ async def search_for_ball():
         if ball_coords is not None:
             Autopilot.storage.state = drive_to_ball
         else:
-            await Autopilot.send('DriveSystem', 'RotateRight', MAX_SPEED/40)
+            if Autopilot.storage.last_seen == 'right':
+                await Autopilot.send('DriveSystem', 'RotateRight', MAX_SPEED/40)
+            elif Autopilot.storage.last_seen == 'left':
+                await Autopilot.send('DriveSystem', 'RotateLeft', MAX_SPEED/40)
+            else:
+                log.error('Autopilot last_seen is invalid: {}'.format(Autopilot.storage.last_seen))
     else:
         Autopilot.storage.state = waiting
 
@@ -85,9 +91,11 @@ async def drive_to_ball():
         ball_coords = await Autopilot.request('Navigation', 'BallPosition')
         if ball_coords is not None:
             if ball_coords['x'] > BALL_HORIZONTAL_THRESH:
+                Autopilot.storage.last_seen = 'right'
                 log.info('Turn right')
                 await Autopilot.send('DriveSystem', 'RotateRight', MAX_SPEED/40)
             elif ball_coords['x'] < -BALL_HORIZONTAL_THRESH:
+                Autopilot.storage.last_seen = 'left'
                 log.info('Turn left')
                 await Autopilot.send('DriveSystem', 'RotateLeft', MAX_SPEED/40)
             else:
