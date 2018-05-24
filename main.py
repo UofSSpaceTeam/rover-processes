@@ -1,6 +1,8 @@
-from robocluster.manager.ProcessManager import ProcessManager, RunOnce
+from robocluster.manager import ProcessManager, RunOnce
 import time
+import config
 
+network=config.network
 
 process_list = [
     # RunOnce('USBManager', 'python3 USBmanager.py'),
@@ -9,12 +11,15 @@ process_list = [
     # RunOnce('DriveControl', 'python3 DriveProcess.py'),
     RunOnce('Joystick', 'python3 JoystickProcess.py'),
     RunOnce('Arm', 'python3 ArmProcess.py')
-    # RunOnce('getter', 'python3 usb_req_example.py'),
-
+    # RunOnce('KalmanFilter', 'python3 KalmanFilterProcess.py'),
+    # RunOnce('Autopilot', 'python3 Autopilot.py'),
+    # RunOnce('WebUI', 'python3 server.py', cwd='rover-webui'),
+    # RunOnce('Navigation', 'python3 NavigationProcess.py'),
+    # RunOnce('Simulator', 'python3 Simulator.py'),
 ]
 
 
-with ProcessManager() as manager:
+with ProcessManager(network=network) as manager:
     # Initialize all the processes
     for proc in process_list:
         manager.addProcess(proc)
@@ -23,7 +28,6 @@ with ProcessManager() as manager:
     manager.start()
 
     try:
-        # Run asyncio event loop
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
