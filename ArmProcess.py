@@ -18,6 +18,8 @@ import math
 # Any libraries you need can be imported here. You almost always need time!
 import time
 from robocluster import Device
+import config
+log = config.getLogger()
 
 
 base_max_speed = 3
@@ -133,23 +135,23 @@ async def get_positions():
                 #     # the rotation.
                 #     reading += 360
                 reading += ArmDevice.storage.joint_offsets[device]
-                print(device)
+                log.debug(device)
                 new_joints[i+1] = round(math.radians(reading), 3) #Convert to radians
             else:
-                print("Could not read joint position {}".format(device), "WARNING")
+                log.warning("Could not read joint position {}".format(device))
     return Joints(*new_joints)
 
 @ArmDevice.every(dt)
 async def loop():
     # await ArmDevice.storage.joints_pos = get_positions()
     ArmDevice.storage.joints_pos = simulate_positions()
-    print("command: {}".format(ArmDevice.storage.command))
+    log.debug("command: {}".format(ArmDevice.storage.command))
     ArmDevice.storage.controller.user_command(ArmDevice.storage.mode, *ArmDevice.storage.command) #Keep an eye on that pointer.
     ArmDevice.storage.speeds = ArmDevice.storage.controller.update_duties(ArmDevice.storage.joints_pos)
 
     #publish speeds/duty cycles here
-    print("joints_pos: {}".format(ArmDevice.storage.joints_pos))
-    print("speeds: {}".format(ArmDevice.storage.speeds))
+    log.debug("joints_pos: {}".format(ArmDevice.storage.joints_pos))
+    log.debug("speeds: {}".format(ArmDevice.storage.speeds))
 
     await send_duties()
 
@@ -247,10 +249,10 @@ async def on_triggerL(event, trigger):
 async def on_buttonB_down(event, data):
     if isinstance(ArmDevice.storage.mode, ManualControl):
         ArmDevice.storage.mode = PlanarControl()
-        print("PlanarControl")
+        log.info("PlanarControl")
     else:
         ArmDevice.storage.mode = ManualControl()
-        print("ManualControl")
+        log.info("ManualControl")
 
 @ArmDevice.on('*/buttonA_down')
 async def on_buttonA_down(event, data):
