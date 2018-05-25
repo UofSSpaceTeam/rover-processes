@@ -9,7 +9,7 @@ level_map = {
     'Printer': default_level,
     'Autopilot': default_level,
     'USBmanager': default_level,
-    'JoystickProcess': default_level,
+    'JoystickProcess': logging.INFO,
     'NavigationProcess': default_level,
     'DriveProcess': default_level,
     'KalmanFilterProcess': default_level,

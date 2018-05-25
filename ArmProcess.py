@@ -40,7 +40,7 @@ height_min_speed = 0.2
 #originally, armWritstPitch was 'armWristRot'.
 device_keys = ["armBase", "armShoulder", "armElbow", "armWristPitch", "armGripperOpen"]
 
-dt = 0.01
+dt = 0.1
 BAUDRATE = 115200
 SERIAL_TIMEOUT = 0.02
 
@@ -145,13 +145,13 @@ async def get_positions():
 async def loop():
     # await ArmDevice.storage.joints_pos = get_positions()
     ArmDevice.storage.joints_pos = simulate_positions()
-    log.debug("command: {}".format(ArmDevice.storage.command))
+    # log.debug("command: {}".format(ArmDevice.storage.command))
     ArmDevice.storage.controller.user_command(ArmDevice.storage.mode, *ArmDevice.storage.command) #Keep an eye on that pointer.
     ArmDevice.storage.speeds = ArmDevice.storage.controller.update_duties(ArmDevice.storage.joints_pos)
 
     #publish speeds/duty cycles here
     log.debug("joints_pos: {}".format(ArmDevice.storage.joints_pos))
-    log.debug("speeds: {}".format(ArmDevice.storage.speeds))
+    # log.debug("speeds: {}".format(ArmDevice.storage.speeds))
 
     await send_duties()
 
@@ -161,8 +161,9 @@ async def send_duties():
     await ArmDevice.publish('armShoulder', {'SetRPM':int(ArmDevice.storage.speeds[1])})
     await ArmDevice.publish('armElbow', {'SetRPM':int(ArmDevice.storage.speeds[2])})
     await ArmDevice.publish('armForearmRot', {'SetRPM':int(ArmDevice.storage.speeds[3])})
-    await ArmDevice.publish('arm_WristRot', {'SetRPM':int(ArmDevice.storage.speeds[4])})
-    await ArmDevice.publish('arm_GripperOpen', {'SetRPM':int(ArmDevice.storage.speeds[5])})
+    await ArmDevice.publish('armWristPitch', {'SetRPM':int(ArmDevice.storage.speeds[4])})
+    await ArmDevice.publish('armWristRot', {'SetRPM':int(ArmDevice.storage.speeds[5])})
+    await ArmDevice.publish('armGripperOpen', {'SetRPM':int(ArmDevice.storage.speeds[6])})
 
 @ArmDevice.on('*/joystick1')
 async def on_joystick1(event, data):
@@ -207,8 +208,8 @@ async def on_joystick2(event, data):
 async def on_dpad(event, data):
     x_axis = data[0]
     y_axis = data[1]
-    ArmDevice.storage.command[3] = y_axis*wrist_pitch_speed
-    ArmDevice.storage.command[4] = x_axis*gripper_rotation_speed
+    ArmDevice.storage.command[4] = y_axis*wrist_pitch_speed
+    ArmDevice.storage.command[5] = x_axis*gripper_rotation_speed
 
 @ArmDevice.on('*/trigger')
 async def on_trigger(event, data):
