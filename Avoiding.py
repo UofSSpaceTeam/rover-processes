@@ -10,8 +10,7 @@ import numpy as np
 import sys
 
 DISTANCE_THRESHOLD = 6 #meters
-PIXEL_THRESHOLD = 200 #if the number of pixels above the DISTANCE_THRESHOLD in zone1 (the middle of the rovers field of view) is greater than or equal to this value 
-
+PIXEL_THRESHOLD = 200 
 def avoidance_decision():
     """Takes in a sampled frame from the ZED camera and decides whether the rover needs to adjust its course 
     returns either "right", "left" or None."""
@@ -32,16 +31,14 @@ def avoidance_decision():
     runtime_parameters = zcam.PyRuntimeParameters()
     runtime_parameters.sensing_mode = sl.PySENSING_MODE.PySENSING_MODE_STANDARD  # Use STANDARD sensing mode
 
-    # Capture 50 images and depth, then stop
-    i = 0
     image = core.PyMat()
     depth = core.PyMat()
     point_cloud = core.PyMat()
-    flag = True
-    while flag:  # loops until it succesfully grabs a frame
+    frame_capped = False
+    while !frame_capped:  # loops until it succesfully grabs a frame
         # A new image is available if grab() returns PySUCCESS
         if zed.grab(runtime_parameters) == tp.PyERROR_CODE.PySUCCESS:
-            flag = False
+            frame_capped = True
             # Retrieve left image
             #zed.retrieve_image(image, sl.PyVIEW.PyVIEW_LEFT)
             # Retrieve depth map. Depth is aligned on the left image
@@ -64,12 +61,11 @@ def avoidance_decision():
                         distance = math.sqrt(point_cloud_value[0] * point_cloud_value[0] +
                                  point_cloud_value[1] * point_cloud_value[1] +
                                  point_cloud_value[2] * point_cloud_value[2])
-                        distance = distance/1000 #convert it to meters manually
+                        distance = distance/1000 #convert it to meters manually (for now at least)
                         if np.isnan(distance):
                             distance = 0
                         if np.isinf(distance):
-                            distance = 40
-                        distance = round(distance)
+                            distance = 4
                         #print("Distance to Camera at ({0}, {1}): {2} mm\n".format(x, y, distance))
                         if distance > DISTANCE_THRESHOLD:
                             zone_count[index] += 1
@@ -86,23 +82,18 @@ def avoidance_decision():
                 turn = "left"
             elif furthest == 2:
                 turn = "right"
-        i = i + 1
     # Close the camera
     zed.close()
     return turn
 
-def avoidance_override():
+def avoidance_override(turn):
     """Takes in either "right" or "left. Turns "angle" degrees and drives "distance" forward."""
     
 
 def obstacle_avoidance():
-    avoid = avoidance_decision()
-    if avoid is None:
+    turn = avoidance_decision()
+    if turn is None:
         return
     else:
-        avoidance_override(avoid)
+        avoidance_override(turn)
         obstacle_avoidance()
-
-    
-
-
