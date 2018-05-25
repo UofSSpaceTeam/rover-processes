@@ -3,6 +3,7 @@ import pyvesc
 from math import expm1 # e**x - 1  for rpm/current curves
 from math import exp
 from robocluster import Device
+import pygame
 
 from roverutil import getnetwork
 
@@ -11,9 +12,9 @@ RPM_TO_ERPM = 12*19 # 12 poles, 19:1 gearbox
 # Limits for Electronic RPM.
 # Note this is not the RPM of the wheel, but the
 # speed at which the motor is commutated.
-
+RPMdiv = 4
 DEADZONE = 0.1
-MAX_RPM = 40000/4
+MAX_RPM = 40000/RPMdiv
 MIN_RPM = 300
 MAX_CURRENT = 6
 MIN_CURRENT = 0.1
@@ -31,6 +32,16 @@ DirectionConstants = {
     'wheelLM':1,
     'wheelLB':1,
 }
+
+pygame.init()
+pygame.joystick.init()
+
+JoystickDevice = Device('JoystickDevice', 'rover', network=getnetwork())
+
+JoystickDevice.storage.joystick1 = pygame.joystick.Joystick(0)
+
+JoystickDevice.storage.joystick1.init()
+
 
 def rpm_curve(f):
     if f > 0:
@@ -76,6 +87,46 @@ def austin_current_curve(f):
     else:
         return -a*MAX_CURRENT*100
 
+def BumperGear(RPMdiv):
+
+    else:
+        pass
+
+    return RPMdiv
+
+LbumpDown = False
+RbumpDown = False
+#gear is the number that MAX_RPM is divided by (higher gear = slower MAX_RPM
+gear = 4
+#gearIndex keeps track of which gear in gearList is current gear
+gearIndex = 0
+
+def GearShift(Lbumpdown, RbumpDown gear, gearIndex):
+    gearList = [4,2,1]
+    LbumpState = JoystickDevice.storage.get_button(4)
+    RbumpState = JoystickDevice.storage.get_button(5)
+    if LbumpDown == False:
+        if LbumpState == True:
+            #print("button " + str(ButtonNum) + " is down")
+            if gearIndex > 0:
+                gearIndex -= 1
+            else:
+                pass
+            LbumpState = True
+        else:
+            pass
+    else:
+        pass
+    if LbumpDown == True:
+        if LbumpState == False:
+            #print("button " + str(ButtonNum) + " is up")
+            LbumpDown = False
+        else:
+            pass
+    else:
+        pass
+
+    return LbumpState, RbumpState, gear
 
 DriveDevice = Device('DriveSystem', 'rover', network=getnetwork())
 
@@ -198,6 +249,18 @@ async def DriveRotateLeft_callback(DriveRotateLeft, speed):
     rpm = speed*60/WHEEL_RADIUS
     await setLeftWheelSpeed(-rpm)
     await setRightWheelSpeed(rpm)
+
+while done == False:
+    # EVENT PROCESSING STEP
+    for event in pygame.event.get():  # User did something
+        if event.type == pygame.QUIT:  # If user clicked close
+            done = True  # Flag that we are done so we exit this loop
+
+
+# Close the window and quit.
+# If you forget this line, the program will 'hang'
+# on exit if running from IDLE.
+pygame.quit()
 
 DriveDevice.start()
 DriveDevice.wait()

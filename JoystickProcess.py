@@ -6,6 +6,9 @@ import pygame
 from robocluster import Device
 
 LOOP_PERIOD = 0.1 # seconds
+#for is button pressed
+ButtonDown = False
+ButtonNum = 4
 
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.init()
@@ -33,6 +36,44 @@ def buttonAssign():
         trigger = [2,5]
     return rightHoriz, rightVert, trigger
 
+ButtonDown = False
+ButtonNum = 4
+
+def IsButtonPressed(ButtonNum, ButtonDown):
+    ButtonBool = JoystickDevice.storage.joystick1.get_button(ButtonNum)
+    #if program doesnt know button is pressed and it is, then change ButtonDown to True
+    if ButtonDown == False:
+        if ButtonBool == True:
+            print("button " + str(ButtonNum) + " is down")
+            ButtonDown = True
+        else:
+            pass
+    else:
+        pass
+
+    if ButtonDown == True:
+        #if program registers button as down but it isnt anymore, change ButtonDown to False
+        if ButtonBool == False:
+            print("button " + str(ButtonNum) + " is up")
+            ButtonDown = False
+
+        else:
+            #otherwise do nothing so the action the button triggers is only done once
+            pass
+    else:
+        pass
+    # so function knows previous status of button next loop
+    return ButtonDown
+
+done = False
+
+while done == False:
+    # EVENT PROCESSING STEP
+    for event in pygame.event.get():  # User did something
+        if event.type == pygame.QUIT:  # If user clicked close
+            done = True  # Flag that we are done so we exit this loop
+    ButtonDown = IsButtonPressed(ButtonNum, ButtonDown)
+
 @JoystickDevice.every(LOOP_PERIOD)
 async def every():
     # assigns os specific joystick assignments
@@ -42,12 +83,12 @@ async def every():
     pygame.event.get()
     left = [JoystickDevice.storage.joystick1.get_axis(0), JoystickDevice.storage.joystick1.get_axis(1)]
     right = [JoystickDevice.storage.joystick1.get_axis(rightHor), JoystickDevice.storage.joystick1.get_axis(rightVer)]
-<<<<<<< HEAD
     # windows treats two triggers as one value, so this code makes linux behave in the same way for the sake of consistency
     if os.name == 'nt':
         trig = JoystickDevice.storage.joystick1.get_axis(trigger)
     else:
         trig = 1 + JoystickDevice.storage.joystick1.get_axis(trigger[0]) + JoystickDevice.storage.joystick1.get_axis(trigger[1])
+
 
 
     await JoystickDevice.publish('joystick1', left)
@@ -56,7 +97,7 @@ async def every():
     print('left: ' + str(left))
     print('right: ' + str(right))
     print('trig: ' + str(trig))
-=======
+
     triggerL = JoystickDevice.storage.joystick1.get_axis(2)
     triggerR = JoystickDevice.storage.joystick1.get_axis(5)
     buttonA = JoystickDevice.storage.joystick1.get_button(0)
@@ -83,7 +124,7 @@ async def every():
     await JoystickDevice.publish('dpad', dpad)
 
 
->>>>>>> 2b7a6061f8c354e00fd7d217bf0b3824271168fa
+
 try:
     JoystickDevice.start()
     JoystickDevice.wait()
