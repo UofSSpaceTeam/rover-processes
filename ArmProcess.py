@@ -210,40 +210,15 @@ async def on_dpad(event, data):
     ArmDevice.storage.command[3] = y_axis*wrist_pitch_speed
     ArmDevice.storage.command[4] = x_axis*gripper_rotation_speed
 
-@ArmDevice.on('*/triggerR')
-async def on_triggerR(event, trigger):
-    ''' Base rotation right'''
-    #print("triggerR:{}".format(trigger), "DEBUG")
-    trigger = (trigger + 1)/2
-    armBaseSpeed = trigger * base_max_speed/2
-    if ArmDevice.storage.base_direction is "left" or ArmDevice.storage.base_direction is None:
-        if -base_min_speed <armBaseSpeed < base_min_speed:
-            armBaseSpeed = 0
-            ArmDevice.storage.base_direction = None
-        else:
-            ArmDevice.storage.base_direction = "left"
-        if isinstance(ArmDevice.storage.mode, ManualControl):
-            ArmDevice.storage.command[0] = armBaseSpeed
-        elif isinstance(ArmDevice.storage.mode, PlanarControl):
-            ArmDevice.storage.command[2] = armBaseSpeed
-
-
-@ArmDevice.on('*/triggerL')
-async def on_triggerL(event, trigger):
-    ''' Base rotation left'''
-    #print("triggerL:{}".format(trigger), "DEBUG")
-    trigger = -1*(trigger + 1)/2
-    armBaseSpeed = trigger * base_max_speed/2
-    if ArmDevice.storage.base_direction is "right" or ArmDevice.storage.base_direction is None:
-        if -base_min_speed <armBaseSpeed < base_min_speed:
-            armBaseSpeed = 0
-            ArmDevice.storage.base_direction = None
-        else:
-            ArmDevice.storage.base_direction = "right"
-        if isinstance(ArmDevice.storage.mode, ManualControl):
-            ArmDevice.storage.command[0] = armBaseSpeed
-        elif isinstance(ArmDevice.storage.mode, PlanarControl):
-            ArmDevice.storage.command[2] = armBaseSpeed
+@ArmDevice.on('*/trigger')
+async def on_trigger(event, data):
+    armBaseSpeed = data*base_max_speed
+    if -base_min_speed < armBaseSpeed < base_min_speed:
+        armBaseSpeed = 0
+    if isinstance(ArmDevice.storage.mode, ManualControl):
+        ArmDevice.storage.command[0] = armBaseSpeed
+    elif isinstance(ArmDevice.storage.mode, PlanarControl):
+        ArmDevice.storage.command[2] = armBaseSpeed
 
 @ArmDevice.on('*/buttonB_down')
 async def on_buttonB_down(event, data):
