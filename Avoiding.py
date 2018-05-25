@@ -85,15 +85,3 @@ def avoidance_decision():
     # Close the camera
     zed.close()
     return turn
-
-def avoidance_override(turn):
-    """Takes in either "right" or "left. Turns "angle" degrees and drives "distance" forward."""
-    
-
-def obstacle_avoidance():
-    turn = avoidance_decision()
-    if turn is None:
-        return
-    else:
-        avoidance_override(turn)
-        obstacle_avoidance()
