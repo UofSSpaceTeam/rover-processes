@@ -28,6 +28,7 @@ NavDevice = Device('Navigation', 'rover', getnetwork())
 NavDevice.storage.rover = Rover()
 # NavDevice.storage.waypoints = [(52.132866, -106.628012)]
 NavDevice.storage.waypoints = [(52.132774, -106.627528)]
+NavDevice.storage.turn_direction = None
 
 @NavDevice.on('*/FilteredGPS')
 @NavDevice.on('*/GPSPosition')
@@ -48,6 +49,10 @@ def compas_callback(event, data):
 @NavDevice.on('*/AccelerometerMessage')
 async def accelerometer_callback(event, data):
     await NavDevice.publish('Acceleration', [data['x'], -data['y']])
+
+@NavDevice.on('*/DirectionToTurn')
+async def update_turn_dircetion(event, data):
+    NavDevice.storage.turn_direction = data
 
 @NavDevice.on_request('RoverPosition')
 def return_position():
@@ -74,6 +79,10 @@ def cacluate_distance(start, dest):
     p0 = GPSPosition(*start)
     p1 = GPSPosition(*dest)
     return p0.distance(p1)
+
+@NavDevice.on_request('DirectionToTurn')
+def return_turn_dir():
+    return NavDevice.storage.turn_direction
 
 
 NavDevice.start()
