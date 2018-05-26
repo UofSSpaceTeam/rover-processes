@@ -38,16 +38,10 @@ radius_min_speed = 0.2
 height_max_speed = 2
 height_min_speed = 0.2
 
-#originally, armWritstPitch was 'armWristRot'.
-device_keys = ["armBase", "armShoulder", "armElbow", "armWristPitch", "armGripperOpen"]
-
 dt = 0.1
-BAUDRATE = 115200
-SERIAL_TIMEOUT = 0.02
 
 ArmDevice = Device('ArmDevice','rover')
 
-ArmDevice.storage.base_direction = None
 ArmDevice.storage.joints_pos = None
 ArmDevice.storage.speeds = None
 ArmDevice.storage.command = None
@@ -57,7 +51,6 @@ ArmDevice.storage.max_angular_velocity = None
 ArmDevice.storage.config = None
 ArmDevice.storage.controller = None
 ArmDevice.storage.mode = None
-ArmDevice.storage.devices = None
 ArmDevice.storage.joint_offsets = None
 
 def setup(arm_storage):
@@ -68,7 +61,6 @@ def setup(arm_storage):
         :synopsis: Takes in a device's storage and initalizes all contained parameters
                to the values from the old class.
     '''
-    arm_storage.base_direction = None
     arm_storage.joints_pos = Joints(0,0,pi/4,0,0,0,0)
     arm_storage.speeds = Joints(0,0,0,0,0,0,0)
     arm_storage.command = [0,0,0,0,0,0,0]
@@ -78,10 +70,10 @@ def setup(arm_storage):
             end_effector = 0.1)
     arm_storage.joint_limits = Joints(
             base = None,
-            # shoulder = Limits(-0.09, 0.721),
-            # elbow = Limits(1.392,1.699),
-            shoulder = None,
-            elbow = None,
+            shoulder = Limits(-0.09, 0.721),
+            elbow = Limits(1.392,1.699),
+            # shoulder = None,
+            # elbow = None,
             forearm_roll = None,
             wrist_pitch = None,
             wrist_roll = None,
@@ -102,8 +94,12 @@ def setup(arm_storage):
     arm_storage.mode = ManualControl()
     arm_storage.devices = {}
     #joint_offesets are values in degrees to 'zero' the encoder angle
-    arm_storage.joint_offsets = {'armShoulder':-332.544,
-            'armElbow':-221.505+90,'armWristPitch':0}
+    arm_storage.joint_offsets = {
+        'armShoulder':-332.544,
+        'armElbow':-221.505+90,
+        'armForearmRot':0,
+        'armWristPitch':0,
+    }
 
 
 def simulate_positions():
@@ -146,7 +142,7 @@ async def get_positions():
 async def loop():
     # await ArmDevice.storage.joints_pos = get_positions()
     ArmDevice.storage.joints_pos = simulate_positions()
-    # log.debug("command: {}".format(ArmDevice.storage.command))
+    log.debug("command: {}".format(ArmDevice.storage.command))
     ArmDevice.storage.controller.user_command(ArmDevice.storage.mode, *ArmDevice.storage.command) #Keep an eye on that pointer.
     ArmDevice.storage.speeds = ArmDevice.storage.controller.update_duties(ArmDevice.storage.joints_pos)
 
