@@ -6,9 +6,6 @@ import pygame
 from robocluster import Device
 
 LOOP_PERIOD = 0.1 # seconds
-#for is button pressed
-ButtonDown = False
-ButtonNum = 4
 
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.init()
@@ -19,6 +16,10 @@ JoystickDevice = Device('JoystickDevice', 'rover', network=getnetwork())
 JoystickDevice.storage.joystick1 = pygame.joystick.Joystick(0)
 
 JoystickDevice.storage.joystick1.init()
+
+button_names = {'buttonA':0, 'buttonB':1, 'buttonX':2, 'buttonY':3,
+        'bumperL':4, 'bumperR':5}
+JoystickDevice.storage.last_state = {key:0 for key in button_names.keys()}
 
 ''' different operating systems have different values associated with joysticks & buttons on 
 an xbox360 controller, this function makes both os's work.
@@ -36,43 +37,6 @@ def buttonAssign():
         trigger = [2,5]
     return rightHoriz, rightVert, trigger
 
-ButtonDown = False
-ButtonNum = 4
-
-def IsButtonPressed(ButtonNum, ButtonDown):
-    ButtonBool = JoystickDevice.storage.joystick1.get_button(ButtonNum)
-    #if program doesnt know button is pressed and it is, then change ButtonDown to True
-    if ButtonDown == False:
-        if ButtonBool == True:
-            print("button " + str(ButtonNum) + " is down")
-            ButtonDown = True
-        else:
-            pass
-    else:
-        pass
-
-    if ButtonDown == True:
-        #if program registers button as down but it isnt anymore, change ButtonDown to False
-        if ButtonBool == False:
-            print("button " + str(ButtonNum) + " is up")
-            ButtonDown = False
-
-        else:
-            #otherwise do nothing so the action the button triggers is only done once
-            pass
-    else:
-        pass
-    # so function knows previous status of button next loop
-    return ButtonDown
-
-done = False
-
-while done == False:
-    # EVENT PROCESSING STEP
-    for event in pygame.event.get():  # User did something
-        if event.type == pygame.QUIT:  # If user clicked close
-            done = True  # Flag that we are done so we exit this loop
-    ButtonDown = IsButtonPressed(ButtonNum, ButtonDown)
 
 @JoystickDevice.every(LOOP_PERIOD)
 async def every():
@@ -98,29 +62,17 @@ async def every():
     print('right: ' + str(right))
     print('trig: ' + str(trig))
 
-    triggerL = JoystickDevice.storage.joystick1.get_axis(2)
-    triggerR = JoystickDevice.storage.joystick1.get_axis(5)
-    buttonA = JoystickDevice.storage.joystick1.get_button(0)
-    buttonB = JoystickDevice.storage.joystick1.get_button(1)
-    buttonX = JoystickDevice.storage.joystick1.get_button(2)
-    buttonY = JoystickDevice.storage.joystick1.get_button(3)
-    bumperL = JoystickDevice.storage.joystick1.get_button(4)
-    bumperR = JoystickDevice.storage.joystick1.get_button(5)
+    for button in button_names.keys():
+        button_val = JoystickDevice.storage.joystick1.get_button(button_names[button])
+        last_value = JoystickDevice.storage.last_state[button]
+        if button_val == 1 and last_value == 0:
+            await JoystickDevice.publish(button+'_down', button_val)
+        elif button_val == 0 and last_value == 1:
+            await JoystickDevice.publish(button+'_up', button_val)
+        await JoystickDevice.publish(button, button_val)
+        JoystickDevice.storage.last_state[button] = button_val
+
     dpad = JoystickDevice.storage.joystick1.get_hat(0)
-
-    await JoystickDevice.publish('joystick1', left)
-    await JoystickDevice.publish('joystick2', right)
-    await JoystickDevice.publish('triggerL', triggerL)
-    await JoystickDevice.publish('triggerR', triggerR)
-
-    await JoystickDevice.publish('buttonA', buttonA)
-    await JoystickDevice.publish('buttonB', buttonB)
-    await JoystickDevice.publish('buttonX', buttonX)
-    await JoystickDevice.publish('buttonY', buttonY)
-
-    await JoystickDevice.publish('bumperL', bumperL)
-    await JoystickDevice.publish('bumperR', bumperR)
-
     await JoystickDevice.publish('dpad', dpad)
 
 

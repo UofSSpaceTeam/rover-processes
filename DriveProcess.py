@@ -3,7 +3,6 @@ import pyvesc
 from math import expm1 # e**x - 1  for rpm/current curves
 from math import exp
 from robocluster import Device
-import pygame
 
 from roverutil import getnetwork
 
@@ -32,16 +31,6 @@ DirectionConstants = {
     'wheelLM':1,
     'wheelLB':1,
 }
-
-pygame.init()
-pygame.joystick.init()
-
-JoystickDevice = Device('JoystickDevice', 'rover', network=getnetwork())
-
-JoystickDevice.storage.joystick1 = pygame.joystick.Joystick(0)
-
-JoystickDevice.storage.joystick1.init()
-
 
 def rpm_curve(f):
     if f > 0:
@@ -87,15 +76,6 @@ def austin_current_curve(f):
     else:
         return -a*MAX_CURRENT*100
 
-def BumperGear(RPMdiv):
-
-    else:
-        pass
-
-    return RPMdiv
-
-LbumpDown = False
-RbumpDown = False
 #gear is the number that MAX_RPM is divided by (higher gear = slower MAX_RPM
 gear = 4
 #gearIndex keeps track of which gear in gearList is current gear
@@ -249,18 +229,6 @@ async def DriveRotateLeft_callback(DriveRotateLeft, speed):
     rpm = speed*60/WHEEL_RADIUS
     await setLeftWheelSpeed(-rpm)
     await setRightWheelSpeed(rpm)
-
-while done == False:
-    # EVENT PROCESSING STEP
-    for event in pygame.event.get():  # User did something
-        if event.type == pygame.QUIT:  # If user clicked close
-            done = True  # Flag that we are done so we exit this loop
-
-
-# Close the window and quit.
-# If you forget this line, the program will 'hang'
-# on exit if running from IDLE.
-pygame.quit()
 
 DriveDevice.start()
 DriveDevice.wait()
