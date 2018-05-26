@@ -43,7 +43,7 @@ def retriveDepth(q):
             # Retrieve left image
             zed.retrieve_image(image, sl.PyVIEW.PyVIEW_LEFT)
 	    #retrieve depth image
-            #zed.retrieve_image(depth_display, sl.PyVIEW.PyVIEW_DEPTH)
+            zed.retrieve_image(depth_display, sl.PyVIEW.PyVIEW_DEPTH)
             # Retrieve depth map. Depth is aligned on the left image
             #zed.retrieve_measure(depth, sl.PyMEASURE.PyMEASURE_DEPTH)
             # Retrieve colored point cloud. Point cloud is aligned on the left image.
@@ -57,7 +57,7 @@ def retriveDepth(q):
             if q.empty():
                 q.put(points)
             #points = points.astype(np.float32)
-            #cv2.imshow("depth map", depth_display.get_data()) 
+            cv2.imshow("depth map", depth_display.get_data()) 
             #key = cv2.waitKey(5)
             #print(i)
             #i = i + 1
@@ -75,7 +75,8 @@ def filterDepth(q):
     
     from pycuda.compiler import SourceModule
     mod = SourceModule("""
-    __global__ void findMin(float *result,float *points,int blockX, int blockY)
+    #include <math.h>
+    __global__ void findMin(float *result,float *points,int blockX, int blockY,int sizeY)
     {
       int idx = threadIdx.x+blockIdx.x*blockDim.x;
       int idy = threadIdx.y+blockIdx.y*blockDim.y;
@@ -83,33 +84,57 @@ def filterDepth(q):
       float minX = 20;
       float minY = 20;
       int i,j;
-      //for(i = idx * blockX; i < idx * blockX + blockX; i++)
-        //  for(j = idy * blockY; j < idy * blockY + blockY; j++){
-          //    if(points[i][j][2] > 0 && points[i][j][2] < minZ){
-            //      minZ = points[i][j][2];
-              //    minX = points[i][j][0];
-                //  minY = points[i][j][1];
-       // }     
-       // }
-     //result[i][j][0] = minX;
-     //result[i][j][1] = minY;
-     //result[i][j][2] = minZ;
+      for(i = idx * blockX; i < idx * blockX + blockX; i++)
+          for(j = idy * blockY; j < idy * blockY + blockY; j++){
+              if(points[2+3*(j+sizeY*i)] > 0 && points[2+3*(j+sizeY*i)] < minZ){
+                  minZ = points[2+3*(j+sizeY*i)];
+                  minX = points[0+3*(j+sizeY*i)];
+                  minY = points[1+3*(j+sizeY*i)];
+        }     
+        }
+     result[0+5*(idy+sizeY*idx)] = minX;
+     result[1+5*(idy+sizeY*idx)] = minX;
+     result[2+5*(idy+sizeY*idx)] = minY;
+     result[3+5*(idy+sizeY*idx)] = minY;
+     result[4+5*(idy+sizeY*idx)] = minZ;
     }
+    __global__ void merge(float *result, int *flag, float *blocks,int sizeY,float threshold){
+      int idx = threadIdx.x+blockIdx.x*blockDim.x;
+      int idy = threadIdx.y+blockIdx.y*blockDim.y;
+      int i = 2*idx;
+      int j = 2*idy;
+      if(abs(3*result[4+5*(idy+sizeY*idx)]-result[4+5*(idy+1+sizeY*idx)]-result[4+5*(idy+sizeY*(idx+1))]result[4+5*(idy+1+sizeY*(idx+1))]) < threshold){
+        result[0+5*(idy+sizeY*idx)] = min(result[0+5*(idy+sizeY*idx)],result[0+5*(idy+sizeY*idx)],result[0+5*(idy+sizeY*idx)],result[0+5*(idy+sizeY*idx)]);
+        result[1+5*(idy+sizeY*idx)] = max(result[1+5*(idy+sizeY*idx)],result[1+5*(idy+sizeY*idx)],result[1+5*(idy+sizeY*idx)],result[1+5*(idy+sizeY*idx)]);
+        result[2+5*(idy+sizeY*idx)] = min(result[2+5*(idy+sizeY*idx)],result[2+5*(idy+sizeY*idx)],result[2+5*(idy+sizeY*idx)],result[2+5*(idy+sizeY*idx)]);
+        result[3+5*(idy+sizeY*idx)] = max(result[3+5*(idy+sizeY*idx)],result[3+5*(idy+sizeY*idx)],result[3+5*(idy+sizeY*idx)],result[3+5*(idy+sizeY*idx)]);
+        result[4+5*(idy+sizeY*idx)] = min(result[4+5*(idy+sizeY*idx)],result[4+5*(idy+sizeY*idx)],result[4+5*(idy+sizeY*idx)],result[4+5*(idy+sizeY*idx)]);
+        flag[idy+sizeY*idx] = 1;
+        flag[idy+1+sizeY*idx] = 1;
+        flag[idy+sizeY*(idx+1)] = 1;
+        flag[idy+1+sizeY*(idx+1)] = 1;
+      }
+    }    
+    
     """)
     while True:
         if not q.empty():
             points = q.get()  
-            points = points[120:240,20:620,0:3]
+            points = points[120:240,20:620,0:3]/1000
             points = points.astype(np.float32)
             points_gpu = cuda.mem_alloc(points.nbytes)
             cuda.memcpy_htod(points_gpu,points)
-            result = np.zeros((8,24),dtype = np.float32)
-            result_gpu = cuda.mem_alloc(result.nbytes)
+            blocks = np.zeros((8,24,5),dtype = np.float32)#minX,maxX,minY,maxY,minZ
+            block_gpu = cuda.mem_alloc(blocks.nbytes)
             findMinFunc = mod.get_function('findMin')
-            findMinFunc(result_gpu,points_gpu,np.int32(15),np.int32(25),block = (8,24,1),grid = (1,1,1),shared = 0)
-            
+            findMinFunc(block_gpu,points_gpu,np.int32(15),np.int32(25),np.int32(600),block = (8,24,1),grid = (1,1,1),shared = 0)
+            for i in range(3):
+                
+                
             
 
+    
+    
 if __name__ == '__main__':
     q=Queue()
     
