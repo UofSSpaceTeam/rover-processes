@@ -43,38 +43,6 @@ def austins_curve(f):
     else:
         return -a
 
-#gear is the number that MAX_RPM is divided by (higher gear = slower MAX_RPM
-gear = 4
-#gearIndex keeps track of which gear in gearList is current gear
-gearIndex = 0
-
-def GearShift(Lbumpdown, RbumpDown, gear, gearIndex):
-    gearList = [4,2,1]
-    LbumpState = JoystickDevice.storage.get_button(4)
-    RbumpState = JoystickDevice.storage.get_button(5)
-    if LbumpDown == False:
-        if LbumpState == True:
-            #print("button " + str(ButtonNum) + " is down")
-            if gearIndex > 0:
-                gearIndex -= 1
-            else:
-                pass
-            LbumpState = True
-        else:
-            pass
-    else:
-        pass
-    if LbumpDown == True:
-        if LbumpState == False:
-            #print("button " + str(ButtonNum) + " is up")
-            LbumpDown = False
-        else:
-            pass
-    else:
-        pass
-
-    return LbumpState, RbumpState, gear
-
 DriveDevice = Device('DriveSystem', 'rover', network=config.network)
 
 # Initialize setup variables
