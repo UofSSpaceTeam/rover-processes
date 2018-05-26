@@ -1,7 +1,8 @@
 from robocluster.manager import ProcessManager, RunOnce
 import time
+import config
 
-network='0.0.0.0/0'
+network=config.network
 
 process_list = [
     # RunOnce('USBManager', 'python3 USBmanager.py {}'.format(network)),

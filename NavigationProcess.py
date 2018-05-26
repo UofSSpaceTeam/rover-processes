@@ -10,7 +10,8 @@ from robocluster import Device
 
 from libraries.GPS.GPSPosition import GPSPosition
 
-from roverutil import getnetwork
+import config
+log = config.getLogger()
 
 
 class Rover:
@@ -23,11 +24,11 @@ class Rover:
         self.roll = 0
 
 
-NavDevice = Device('Navigation', 'rover', getnetwork())
+NavDevice = Device('Navigation', 'rover', network=config.network)
 
 NavDevice.storage.rover = Rover()
 # NavDevice.storage.waypoints = [(52.132866, -106.628012)]
-NavDevice.storage.waypoints = [(52.132774, -106.627528)]
+NavDevice.storage.waypoints = []
 
 @NavDevice.on('*/FilteredGPS')
 @NavDevice.on('*/GPSPosition')
@@ -41,13 +42,18 @@ def update_heading(event, data):
 
 @NavDevice.on('*/CompassDataMessage')
 def compas_callback(event, data):
-    NavDevice.storage.rover.heading = data['heading']+10.26667 #magnetic declination offset 10.58333 for Hanksville
+    NavDevice.storage.rover.heading = data['heading'] #magnetic declination offset 10.58333 for Hanksville 10.26667 for SK
     NavDevice.storage.rover.pitch = data['pitch']
     NavDevice.storage.rover.roll = data['roll']
 
 @NavDevice.on('*/AccelerometerMessage')
 async def accelerometer_callback(event, data):
     await NavDevice.publish('Acceleration', [data['x'], -data['y']])
+
+@NavDevice.on('*/sendWaypoints')
+def update_waypoints(event, data):
+    NavDevice.storage.waypoints = data
+    log.debug('Waypoints: {}'.format(data))
 
 @NavDevice.on_request('RoverPosition')
 def return_position():

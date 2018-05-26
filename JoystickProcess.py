@@ -1,9 +1,11 @@
 import time
 import os
-from roverutil import getnetwork
 
 import pygame
 from robocluster import Device
+
+import config
+log = config.getLogger()
 
 LOOP_PERIOD = 0.1 # seconds
 
@@ -11,7 +13,7 @@ os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.init()
 pygame.joystick.init()
 
-JoystickDevice = Device('JoystickDevice', 'rover', network=getnetwork())
+JoystickDevice = Device('JoystickDevice', 'rover', network=config.network)
 
 JoystickDevice.storage.joystick1 = pygame.joystick.Joystick(0)
 
@@ -45,22 +47,20 @@ async def every():
     rightVer = buttonAssign()[1]
     trigger = buttonAssign()[2]
     pygame.event.get()
-    left = [JoystickDevice.storage.joystick1.get_axis(0), JoystickDevice.storage.joystick1.get_axis(1)]
-    right = [JoystickDevice.storage.joystick1.get_axis(rightHor), JoystickDevice.storage.joystick1.get_axis(rightVer)]
+    left = [JoystickDevice.storage.joystick1.get_axis(0), -JoystickDevice.storage.joystick1.get_axis(1)]
+    right = [JoystickDevice.storage.joystick1.get_axis(rightHor), -JoystickDevice.storage.joystick1.get_axis(rightVer)]
     # windows treats two triggers as one value, so this code makes linux behave in the same way for the sake of consistency
     if os.name == 'nt':
         trig = JoystickDevice.storage.joystick1.get_axis(trigger)
     else:
-        trig = 1 + JoystickDevice.storage.joystick1.get_axis(trigger[0]) + JoystickDevice.storage.joystick1.get_axis(trigger[1])
-
+        ltrig = (1 + JoystickDevice.storage.joystick1.get_axis(trigger[0]))/2
+        rtrig = (1 + JoystickDevice.storage.joystick1.get_axis(trigger[1]))/2
+        trig = rtrig - ltrig
 
 
     await JoystickDevice.publish('joystick1', left)
     await JoystickDevice.publish('joystick2', right)
     await JoystickDevice.publish('trigger', trig)
-    print('left: ' + str(left))
-    print('right: ' + str(right))
-    print('trig: ' + str(trig))
 
     for button in button_names.keys():
         button_val = JoystickDevice.storage.joystick1.get_button(button_names[button])
@@ -75,7 +75,9 @@ async def every():
     dpad = JoystickDevice.storage.joystick1.get_hat(0)
     await JoystickDevice.publish('dpad', dpad)
 
-
+    log.debug('left stick: ' + str(left))
+    log.debug('right stick: ' + str(right))
+    log.debug('trigger: ' + str(trig))
 
 try:
     JoystickDevice.start()
