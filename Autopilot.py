@@ -11,7 +11,7 @@ LOOP_PERIOD = 0.1
 MIN_WHEEL_RPM = 1000
 MAX_SPEED = 2 # m/s
 BEARING_THRESH = 10 # degrees
-GPS_DISTANCE_THRESH = 1 # meters
+GPS_DISTANCE_THRESH = 5 # meters
 
 ###### Initialization ########
 
@@ -59,11 +59,13 @@ async def drive_to_target():
             else:
                 log.info('!!!!!!!HERE!!!!!!!!!!')
                 # We are close enough TODO: search for ball
-                Autopilot.storage.enabled = False
-                await Autopilot.send('DriveSystem', 'Stop', 0)
-                await Autopilot.publish("Autopilot", False)  # update WebUI
-                await Autopilot.publish("TargetReached", True)
-                Autopilot.storage.state = waiting
+                Autopilot.storage.waypoints = Autopilot.storage.waypoints[1:]
+                if len(Autopilot.storage.waypoints) <= 0:
+                    Autopilot.storage.enabled = False
+                    await Autopilot.send('DriveSystem', 'Stop', 0)
+                    await Autopilot.publish("Autopilot", False)  # update WebUI
+                    await Autopilot.publish("TargetReached", True)
+                    Autopilot.storage.state = waiting
     else:
         Autopilot.storage.state = waiting
 

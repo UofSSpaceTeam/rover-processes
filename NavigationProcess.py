@@ -28,7 +28,7 @@ NavDevice = Device('Navigation', 'rover', network=config.network)
 
 NavDevice.storage.rover = Rover()
 # NavDevice.storage.waypoints = [(52.132866, -106.628012)]
-NavDevice.storage.waypoints = [(52.132458, -106.627159)]
+NavDevice.storage.waypoints = []
 
 @NavDevice.on('*/FilteredGPS')
 @NavDevice.on('*/GPSPosition')
@@ -49,6 +49,11 @@ def compas_callback(event, data):
 @NavDevice.on('*/AccelerometerMessage')
 async def accelerometer_callback(event, data):
     await NavDevice.publish('Acceleration', [data['x'], -data['y']])
+
+@NavDevice.on('*/sendWaypoints')
+def update_waypoints(event, data):
+    NavDevice.storage.waypoints = data
+    log.debug('Waypoints: {}'.format(data))
 
 @NavDevice.on_request('RoverPosition')
 def return_position():
