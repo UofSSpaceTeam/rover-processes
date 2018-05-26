@@ -84,6 +84,7 @@ async def loop():
                 # print("Rover piksi is connected")
                 lats = []
                 longs = []
+                heights = []
                 for i in range(NUM_SAMPLES):
                     # Take average of multiple samples.
                     # Actually doesn't perform that well...
@@ -91,10 +92,12 @@ async def loop():
                     if msg is not None:
                         lats.append(msg.lat)
                         longs.append(msg.lon)
+                        heights.append(msg.height)
                     await GPSdevice.sleep(SAMPLE_RATE)
                 if len(lats) > 1:
                     await GPSdevice.publish('singlePointGPS',
                             [mean(lats), mean(longs)])
+                    await GPSdevice.publish('GPSHeight', mean(heights))
                 else:
                     log.warning("Failed to take GPS averege")
                 msg = piksi.poll(MSG_VEL_NED)
