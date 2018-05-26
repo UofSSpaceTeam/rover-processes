@@ -14,7 +14,7 @@ MAX_SPEED = 2 # m/s
 BEARING_THRESH = 5 # degrees
 GPS_DISTANCE_THRESH = 5 # meters
 ROVER_RADIUS = 35/100  # 0.35 meters (possibly needs to be increased)
-AVOIDANCE_ANGLE = math.pi/4  # 45 degrees
+AVOIDANCE_ANGLE = 45  # degrees
 AVOIDANCE_DISTANCE = 3  # meters (skylars nonsense)
 
 ###### Initialization ########
@@ -40,7 +40,6 @@ async def drive_to_target():
     if Autopilot.storage.turn is not None: 
         Autopilot.storage.drive = False
         Autopilot.storage.rotate = True
-        Autopilot.storage.start_time = time.time()
         Autopilot.storage.start_heading = await Autopilot.request('Navigation', 'RoverPosition') 
         Autopilot.storage.state = avoiding_obstacles
     if Autopilot.storage.enabled:
@@ -86,7 +85,6 @@ async def avoiding_obstacles():
         drive_speed = MAX_SPEED/60  # the speed the rover will drive the AVOIDANCE_DISTANCE
         rotation_speed = drive_speed/ROVER_RADIUS  
         drive_time = AVOIDANCE_DISTANCE/drive_speed 
-        rotation_time = AVOIDANCE_ANGLE/rotation_speed
         heading = await Autopilot.request('Navigation', 'RoverPosition')
         if Autopilot.storage.rotate:
             if Autopilot.storage.turn == "right": # Turn right
@@ -96,11 +94,10 @@ async def avoiding_obstacles():
             if abs(heading-Autopilot.storage.start_heading) >= AVOIDANCE_ANGLE:
                 Autopilot.storage.rotate = False
                 Autopilot.storage.drive = True
-                Autopilot.storage.start_time = time.time()
+                start_time = time.time()
         if Autopilot.storage.drive:            
             await Autopilot.send('DriveSystem', 'DriveForward', drive_speed)
-            if (time.time()-Autopilot.storage.start_time) > drive_time:
-                Autopilot.storage.drive = False
+            if (time.time()-start_time) > drive_time:
                 Autopilot.storage.state = drive_to_target
 
 Autopilot.storage.state = waiting
