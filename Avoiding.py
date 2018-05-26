@@ -20,54 +20,36 @@ AvoidanceDecision = Device('AvoidanceDecision', 'rover', network=config.network)
 DISTANCE_THRESHOLD = 2 #meters
 PIXEL_THRESHOLD = 30
 
-#@AvoidanceDecision.task
-def init():
-    AvoidanceDecision.storage.zed = zcam.PyZEDCamera()
-    print("testing")
-    # Create a PyInitParameters object and set configuration parameters
-    AvoidanceDecision.storage.init_params = zcam.PyInitParameters()
-    AvoidanceDecision.storage.init_params.depth_mode = sl.PyDEPTH_MODE.PyDEPTH_MODE_QUALITY  # Use PERFORMANCE depth mode
-    AvoidanceDecision.storage.init_params.coordinate_units = sl.PyUNIT.PyUNIT_MILLIMETER  # Use milliliter units (for depth measurements)
 
-    # Open the camera
-    err = AvoidanceDecision.storage.zed.open(AvoidanceDecision.storage.init_params)
-    while err != tp.PyERROR_CODE.PySUCCESS:
-        err = AvoidanceDecision.storage.zed.open(AvoidanceDecision.storage.init_params)
 
-    # Create and set PyRuntimeParameters after opening the camera
-    AvoidanceDecision.storage.runtime_parameters = zcam.PyRuntimeParameters()
-    AvoidanceDecision.storage.runtime_parameters.sensing_mode = sl.PySENSING_MODE.PySENSING_MODE_FILL  #use fill mode
-    # zed camera has to be open before importing pycuda
-   
-@AvoidanceDecision.every('100ms')
+AvoidanceDecision.storage.first = True 
+@AvoidanceDecision.every('0.0000001ms')
 async def main():
+    #init()
+    start_time = time.time()
     """Takes in a sampled frame from the ZED camera and decides whether the rover needs to adjust its course
     returns either "right", "left" or None."""
-    AvoidanceDecision.storage.zed = zcam.PyZEDCamera()
-    # Create a PyInitParameters object and set configuration parameters
-    AvoidanceDecision.storage.init_params = zcam.PyInitParameters()
-    AvoidanceDecision.storage.init_params.depth_mode = sl.PyDEPTH_MODE.PyDEPTH_MODE_QUALITY  # Use PERFORMANCE depth mode
-    AvoidanceDecision.storage.init_params.coordinate_units = sl.PyUNIT.PyUNIT_MILLIMETER  # Use milliliter units (for depth measurements)
-    
-    start_time = time.time()
+   
     # Open the camera
-    err = AvoidanceDecision.storage.zed.open(AvoidanceDecision.storage.init_params)
-    
-    print("check time: ", time.time() - start_time) 
-    failed = 0
-    while err != tp.PyERROR_CODE.PySUCCESS:
-        failed += 1
-        print("\rCould not open camera", failed, "times")
+    if AvoidanceDecision.storage.first==True:
+        AvoidanceDecision.storage.zed = zcam.PyZEDCamera()
+        # Create a PyInitParameters object and set configuration parameters
+        AvoidanceDecision.storage.init_params = zcam.PyInitParameters()
+        AvoidanceDecision.storage.init_params.depth_mode = sl.PyDEPTH_MODE.PyDEPTH_MODE_QUALITY  # Use PERFORMANCE depth mode
+        AvoidanceDecision.storage.init_params.coordinate_units = sl.PyUNIT.PyUNIT_MILLIMETER  # Use milliliter units (for depth measurements)
+ 
         err = AvoidanceDecision.storage.zed.open(AvoidanceDecision.storage.init_params)
-
-    # Create and set PyRuntimeParameters after opening the camera
-    AvoidanceDecision.storage.runtime_parameters = zcam.PyRuntimeParameters()
-    AvoidanceDecision.storage.runtime_parameters.sensing_mode = sl.PySENSING_MODE.PySENSING_MODE_FILL  #use fill mode
-    # zed camera has to be open before importing pycuda
-    #import pycuda.autoinit
-    #import pycuda.driver as cuda
-
-    #from pycuda.compiler import SourceModule
+        
+        print("check time: ", time.time() - start_time) 
+        failed = 0
+        while err != tp.PyERROR_CODE.PySUCCESS:
+            failed += 1
+            print("\rCould not open camera", failed, "times")
+            err = AvoidanceDecision.storage.zed.open(AvoidanceDecision.storage.init_params)
+        AvoidanceDecision.storage.first = False 
+        # Create and set PyRuntimeParameters after opening the camera
+        AvoidanceDecision.storage.runtime_parameters = zcam.PyRuntimeParameters()
+        AvoidanceDecision.storage.runtime_parameters.sensing_mode = sl.PySENSING_MODE.PySENSING_MODE_STANDARD  #use fill mode
  
     runtime_parameters = AvoidanceDecision.storage.runtime_parameters 
     zed = AvoidanceDecision.storage.zed
@@ -92,18 +74,6 @@ async def main():
             # Break image into three zones vertically
 
 
-            #mod = SourceModule(
-            """
-            #include <stdio.h>
-            __global__ void filterPoints(int * result,float *points,int size, float minX,float maxX,float minY,float maxY,float maxZ)
-            // Checks whether the point is within a certain cube.
-            {
-            const int i = threadIdx.x+blockIdx.x*blockDim.x;
-            if (i<size)
-                result[i] = (points[3*i]>minX && points[3*i] <maxX && points[3*i+1]>minY && points[3*i+1] <maxY && points[3*i+2] <maxZ);
-            }
-            """
-            #)
 
             width = image.get_width()
             height = image.get_height()
@@ -157,6 +127,6 @@ async def main():
     #cv2.imshow("Frame", depth_display.get_data())
     #key = cv2.waitKey(1)
     await AvoidanceDecision.publish('DirectionToTurn', turn)
-#init()
+
 AvoidanceDecision.start()
 AvoidanceDecision.wait()
