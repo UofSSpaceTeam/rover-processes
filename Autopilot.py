@@ -37,12 +37,13 @@ async def waiting():
         await Autopilot.send('DriveSystem', 'Stop', 0)
 
 async def drive_to_target():
-    Autopilot.storage.turn = await Autopilot.request('Navigation' 'DirectionToTurn')
-    if Autopilot.storage.turn is not None: 
+    Autopilot.storage.turn = await Autopilot.request('Navigation', 'DirectionToTurn')
+    if Autopilot.storage.turn is not None:
         Autopilot.storage.drive = False
         Autopilot.storage.rotate = True
-        Autopilot.storage.start_heading = await Autopilot.request('Navigation', 'RoverPosition') 
+        Autopilot.storage.start_heading = await Autopilot.request('Navigation', 'RoverHeading')
         Autopilot.storage.state = avoiding_obstacles
+        return
     if Autopilot.storage.enabled:
         position = await Autopilot.request('Navigation', 'RoverPosition')
         if position == [0,0]:
@@ -88,10 +89,10 @@ async def drive_to_ball():
     pass
 
 async def avoiding_obstacles():
-        drive_speed = MAX_SPEED/60  # the speed the rover will drive the AVOIDANCE_DISTANCE
-        rotation_speed = drive_speed/ROVER_RADIUS  
-        drive_time = AVOIDANCE_DISTANCE/drive_speed 
-        heading = await Autopilot.request('Navigation', 'RoverPosition')
+        drive_speed = MAX_SPEED/2 # the speed the rover will drive the AVOIDANCE_DISTANCE
+        rotation_speed = drive_speed/ROVER_RADIUS
+        drive_time = AVOIDANCE_DISTANCE/drive_speed
+        heading = await Autopilot.request('Navigation', 'RoverHeading')
         if Autopilot.storage.rotate:
             if Autopilot.storage.turn == "right": # Turn right
                 await Autopilot.send('DriveSystem', 'RotateRight', MAX_SPEED/60)
@@ -100,10 +101,10 @@ async def avoiding_obstacles():
             if abs(heading-Autopilot.storage.start_heading) >= AVOIDANCE_ANGLE:
                 Autopilot.storage.rotate = False
                 Autopilot.storage.drive = True
-                start_time = time.time()
-        if Autopilot.storage.drive:            
+                Autopilot.storage.start_time = time.time()
+        if Autopilot.storage.drive:
             await Autopilot.send('DriveSystem', 'DriveForward', drive_speed)
-            if (time.time()-start_time) > drive_time:
+            if (time.time()-Autopilot.storage.start_time) > drive_time:
                 Autopilot.storage.state = drive_to_target
 
 Autopilot.storage.state = waiting
