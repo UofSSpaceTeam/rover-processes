@@ -233,22 +233,22 @@ async def on_buttonB_down(event, data):
 @ArmDevice.on('*/buttonA_down')
 async def on_buttonA_down(event, data):
     print("gripper close:{}".format(data), "DEBUG")
-    ArmDevice.storage.command[5] = gripper_open_speed
+    ArmDevice.storage.command[6] = gripper_open_speed
 
 @ArmDevice.on('*/buttonA_up')
 async def on_buttonA_up(event,data):
     print("gripper close stop:{}".format(data), "DEBUG")
-    ArmDevice.storage.command[5] = 0
+    ArmDevice.storage.command[6] = 0
 
 @ArmDevice.on('*/buttonY_up')
 async def on_buttonY_up(event,data):
     print("gripper open stop:{}".format(data), "DEBUG")
-    ArmDevice.storage.command[5] = 0
+    ArmDevice.storage.command[6] = 0
 
 @ArmDevice.on('*/buttonY_down')
 async def on_buttonY_down(event, data):
     print("gripper open:{}".format(data), "DEBUG")
-    ArmDevice.storage.command[5] = -gripper_open_speed
+    ArmDevice.storage.command[6] = -gripper_open_speed
 
 
 setup(ArmDevice.storage)
