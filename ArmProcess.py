@@ -28,6 +28,7 @@ shoulder_max_speed = 2
 shoulder_min_speed = 0.1
 elbow_max_speed = 2
 elbow_min_speed = 0.1
+forearm_roll_speed = 2
 wrist_pitch_speed = 2
 gripper_rotation_speed = 2
 gripper_open_speed = 1
@@ -232,23 +233,35 @@ async def on_buttonB_down(event, data):
 
 @ArmDevice.on('*/buttonA_down')
 async def on_buttonA_down(event, data):
-    print("gripper close:{}".format(data), "DEBUG")
     ArmDevice.storage.command[6] = gripper_open_speed
 
 @ArmDevice.on('*/buttonA_up')
 async def on_buttonA_up(event,data):
-    print("gripper close stop:{}".format(data), "DEBUG")
     ArmDevice.storage.command[6] = 0
 
 @ArmDevice.on('*/buttonY_up')
 async def on_buttonY_up(event,data):
-    print("gripper open stop:{}".format(data), "DEBUG")
     ArmDevice.storage.command[6] = 0
 
 @ArmDevice.on('*/buttonY_down')
 async def on_buttonY_down(event, data):
-    print("gripper open:{}".format(data), "DEBUG")
     ArmDevice.storage.command[6] = -gripper_open_speed
+
+@ArmDevice.on('*/bumperR_down')
+async def on_buttonA_down(event, data):
+    ArmDevice.storage.command[3] = forearm_roll_speed
+
+@ArmDevice.on('*/bumperR_up')
+async def on_buttonA_up(event,data):
+    ArmDevice.storage.command[3] = 0
+
+@ArmDevice.on('*/bumperL_up')
+async def on_buttonY_up(event,data):
+    ArmDevice.storage.command[3] = 0
+
+@ArmDevice.on('*/bumperL_down')
+async def on_buttonY_down(event, data):
+    ArmDevice.storage.command[3] = -forearm_roll_speed
 
 
 setup(ArmDevice.storage)
