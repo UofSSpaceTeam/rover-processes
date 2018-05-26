@@ -28,9 +28,8 @@ def init():
 
     # Open the camera
     err = zed.open(init_params)
-    if err != tp.PyERROR_CODE.PySUCCESS:
-        print("Could not open camera")
-        exit(1)
+    while err != tp.PyERROR_CODE.PySUCCESS:
+        err = zed.open(init_params)
 
     # Create and set PyRuntimeParameters after opening the camera
     runtime_parameters = zcam.PyRuntimeParameters()
@@ -103,12 +102,12 @@ async def main(event, data):
 
 
     # Close the camera
-    zed.close()
+    #zed.close()
     #print("Testing")
-    print("zone1: ", zone_count[0], "\nzone2: ", zone_count[1], "\nzone3: ", zone_count[2])
-    print("turn", turn)
-    cv2.imshow("Frame", depth_display.get_data())
-    key = cv2.waitKey(5000)
+    #print("zone1: ", zone_count[0], "\nzone2: ", zone_count[1], "\nzone3: ", zone_count[2])
+    #print("turn", turn)
+    #cv2.imshow("Frame", depth_display.get_data())
+    #key = cv2.waitKey(5000)
     await AvoidanceDecision.publish('DirectionToTurn', turn) 
 
 try:

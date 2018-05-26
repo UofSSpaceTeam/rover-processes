@@ -36,7 +36,7 @@ async def waiting():
         await Autopilot.send('DriveSystem', 'Stop', 0)
 
 async def drive_to_target():
-    Autopilot.storage.turn = await Autopilot.request("the avoidance_decision return")
+    Autopilot.storage.turn = await Autopilot.request('Navigation' 'DirectionToTurn')
     if Autopilot.storage.turn is not None: 
         Autopilot.storage.drive = False
         Autopilot.storage.rotate = True
