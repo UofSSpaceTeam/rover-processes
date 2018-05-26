@@ -5,11 +5,13 @@ from robocluster import Device
 import random as random
 import matplotlib.pyplot as plt
 import time
-from roverutil import getnetwork
 
-KalmanFilter = Device('KalmanFilter', 'rover', network=getnetwork())
+import config
+log = config.getLogger()
 
-DummyGPS = Device('DummyGPS', 'rover', network=getnetwork())
+KalmanFilter = Device('KalmanFilter', 'rover', network=config.network)
+
+DummyGPS = Device('DummyGPS', 'rover', network=config.network)
 # @DummyGPS.every('0.1s')
 async def dummy():
     #await DummyGPS.publish('singlePointGPS', [51.00000+(random.randrange(400, 600)/1000000), 110.00000+(random.randrange(600, 800)/1000000)])
@@ -183,8 +185,8 @@ async def kalman_filter(event, data):
     true_gps = utm.to_latlon(x_cc[0, 0], x_cc[1, 0], zone_info[0], zone_info[1], strict=False)  # this has the value we
     cart_pos_final = [x_cc[0,0], x_cc[1,0]]
 
-    # print('raw: {}'.format(data))
-    # print("                                             filtered: {}".format(true_gps))
+    log.debug('raw: {}'.format(data))
+    log.debug("filtered: {}".format(true_gps))
 
     ''' pres = 0.00001
     dif_lat = abs(true_gps[0] - 52.132653)
