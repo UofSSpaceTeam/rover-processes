@@ -14,6 +14,7 @@ process_list = [
     RunOnce('Autopilot', 'python3 Autopilot.py'),
     RunOnce('WebUI', 'python3 server.py', cwd='rover-webui'),
     RunOnce('Navigation', 'python3 NavigationProcess.py'),
+    # RunOnce('ObstacleDetection', 'python3 Avoidance.py'),
     RunOnce('Simulator', 'python3 Simulator.py'),
 ]
 

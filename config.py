@@ -14,6 +14,7 @@ level_map = {
     'DriveProcess': default_level,
     'KalmanFilterProcess': default_level,
     'GPSDriver': default_level,
+    'Avoiding': default_level,
 }
 
 log_filter_string = ''
