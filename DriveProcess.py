@@ -13,14 +13,15 @@ RPM_TO_ERPM = 12*19 # 12 poles, 19:1 gearbox
 # Limits for Electronic RPM.
 # Note this is not the RPM of the wheel, but the
 # speed at which the motor is commutated.
-RPMdiv = 4
 DEADZONE = 0.1
-MAX_RPM = 40000/RPMdiv
+MAX_RPM = 40000
 MIN_RPM = 300
 MAX_RPM_CHANGE = MAX_RPM/2
-MAX_CURRENT = 6
+MAX_CURRENT = 1
 MIN_CURRENT = 0.1
 CURVE_VAL = 17
+MIN_DIVISOR = 1
+MAX_DIVISOR = 4
 
 WHEEL_RADIUS = 0.26 # meters
 ROVER_WIDTH = 1.16 # meters
@@ -47,7 +48,7 @@ gear = 4
 #gearIndex keeps track of which gear in gearList is current gear
 gearIndex = 0
 
-def GearShift(Lbumpdown, RbumpDown gear, gearIndex):
+def GearShift(Lbumpdown, RbumpDown, gear, gearIndex):
     gearList = [4,2,1]
     LbumpState = JoystickDevice.storage.get_button(4)
     RbumpState = JoystickDevice.storage.get_button(5)
@@ -83,6 +84,7 @@ DriveDevice.storage.drive_mode = "rpm" # "rpm" or "current"
 DriveDevice.storage.api_enabled = False
 DriveDevice.storage.left_rpm = 0
 DriveDevice.storage.right_rpm = 0
+DriveDevice.storage.divisor = 4
 
 @DriveDevice.on('*/joystick1')
 async def joystick1_callback(joystick1, data):
@@ -96,7 +98,7 @@ async def joystick1_callback(joystick1, data):
     if y_axis is None:
             return
     if DriveDevice.storage.drive_mode == "rpm":
-            speed = austins_curve(y_axis)*MAX_RPM
+            speed = austins_curve(y_axis)*MAX_RPM/DriveDevice.storage.divisor
             if -DEADZONE < y_axis < DEADZONE: # DEADZONE
                     speed = 0
             await DriveDevice.publish('wheelLF', {'SetRPM':DirectionConstants['wheelLF']*int(speed)})
@@ -120,7 +122,7 @@ async def joystick2_callback(joystick2, data):
     if y_axis is None:
             return
     if DriveDevice.storage.drive_mode == "rpm":
-            speed = austins_curve(y_axis)*MAX_RPM
+            speed = austins_curve(y_axis)*MAX_RPM/DriveDevice.storage.divisor
             if -DEADZONE < y_axis < DEADZONE: # DEADZONE
                     speed = 0
             await DriveDevice.publish("wheelRF", {'SetRPM':DirectionConstants['wheelRF']*int(speed)})
@@ -155,6 +157,19 @@ async def Rtrigger_callback(Rtrigger, trigger):
             await DriveDevice.publish("wheelRB", {'SetCurrent':max_current})
     else:
             DriveDevice.storage.right_brake = False
+
+@DriveDevice.on('*/bumperR_down')
+def up_shift(event, data):
+    d = DriveDevice.storage.divisor/2
+    d = max(MIN_DIVISOR, d)
+    DriveDevice.storage.divisor = d
+
+
+@DriveDevice.on('*/bumperL_down')
+def down_shift(event, data):
+    d = DriveDevice.storage.divisor*2
+    d = min(MAX_DIVISOR, d)
+    DriveDevice.storage.divisor = d
 
 
 #### Drive API #####
