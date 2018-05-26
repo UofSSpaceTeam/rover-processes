@@ -9,14 +9,16 @@ import math
 import numpy as np
 import sys
 import cv2
+from robocluster import Device
+from roverutil import getnetwork
+
+AvoidanceDecision = Device('AvoidanceDecision', 'rover', network=getnetwork())
 
 DISTANCE_THRESHOLD = 2 #meters
 PIXEL_THRESHOLD = 30
-def main():
-    """Takes in a sampled frame from the ZED camera and decides whether the rover needs to adjust its course 
-    returns either "right", "left" or None."""
-    # Create a PyZEDCamera object
-    
+
+@AvoidanceDecision.task
+def init():
     zed = zcam.PyZEDCamera()
 
     # Create a PyInitParameters object and set configuration parameters
@@ -34,6 +36,15 @@ def main():
     runtime_parameters = zcam.PyRuntimeParameters()
     runtime_parameters.sensing_mode = sl.PySENSING_MODE.PySENSING_MODE_FILL  # Use STANDARD sensing mode
 
+
+
+
+@AvoidanceDecision.every('100ms')
+async def main(event, data):
+    """Takes in a sampled frame from the ZED camera and decides whether the rover needs to adjust its course 
+    returns either "right", "left" or None."""
+    # Create a PyZEDCamera object
+    
     image = core.PyMat()
     depth = core.PyMat()
     point_cloud = core.PyMat()
@@ -50,7 +61,6 @@ def main():
             zed.retrieve_measure(depth, sl.PyMEASURE.PyMEASURE_DEPTH)
             # Retrieve colored point cloud. Point cloud is aligned on the left image.
             zed.retrieve_measure(point_cloud, sl.PyMEASURE.PyMEASURE_XYZRGBA)
-            # Get and print distance value in mm at the center of the image
             # We measure the distance camera - object using Euclidean distance
             # Break image into three zones vertically 
             width = image.get_width()
@@ -59,11 +69,9 @@ def main():
             zone_end = [round(width/3), round(width/3)*2, width]
             zone_start = [0, round(width/3), round(width/3)*2]
             zone_count = [0, 0, 0]
-            i = 0
             for index in range(3):
                 for x in range(zone_start[index], zone_end[index], 5):
                     for y in range(0, round(height*2/3), 5):
-                        i += 1
                         err, point_cloud_value = point_cloud.get_value(x, y)
                         distance = math.sqrt(point_cloud_value[0] * point_cloud_value[0] +
                                  point_cloud_value[1] * point_cloud_value[1] +
@@ -101,10 +109,12 @@ def main():
     print("turn", turn)
     cv2.imshow("Frame", depth_display.get_data())
     key = cv2.waitKey(5000)
- 
-    return turn
+    await AvoidanceDecision.publish('DirectionToTurn', turn) 
 
-if __name__ == "__main__":
-    main()
-          
+try:
+    AvoidanceDecision.start()
+    AvoidanceDecision.stop()
+
+except KeyboardInterrupt:
+    AvoidanceDecision.stop()          
 
