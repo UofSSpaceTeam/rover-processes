@@ -7,9 +7,11 @@ import math
 import numpy as np
 import sys
 import cv2
+import time
 
-WIDTH = 640
-HEIGHT = 360
+WIDTH = 1280
+HEIGHT = 720
+THRESHOLD = 1
 def retriveDepth(q):
    
     # Create a PyZEDCamera object
@@ -17,7 +19,7 @@ def retriveDepth(q):
     
     # Create a PyInitParameters object and set configuration parameters
     init_params = zcam.PyInitParameters()
-    init_params.depth_mode = sl.PyDEPTH_MODE.PyDEPTH_MODE_PERFORMANCE  # Use PERFORMANCE depth mode
+    init_params.depth_mode = sl.PyDEPTH_MODE.PyDEPTH_MODE_QUALITY  # Use PERFORMANCE depth mode
     init_params.coordinate_units = sl.PyUNIT.PyUNIT_MILLIMETER  # Use milliliter units (for depth measurements)
     
     # Open the camera
@@ -28,7 +30,7 @@ def retriveDepth(q):
 
     # Create and set PyRuntimeParameters after opening the camera
     runtime_parameters = zcam.PyRuntimeParameters()
-    runtime_parameters.sensing_mode = sl.PySENSING_MODE.PySENSING_MODE_STANDARD  # Use STANDARD sensing mode
+    runtime_parameters.sensing_mode = sl.PySENSING_MODE.PySENSING_MODE_FILL  # Use STANDARD sensing mode
 
     # Capture 50 images and depth, then stop
     i = 0
@@ -43,7 +45,8 @@ def retriveDepth(q):
             # Retrieve left image
             zed.retrieve_image(image, sl.PyVIEW.PyVIEW_LEFT)
 	    #retrieve depth image
-            zed.retrieve_image(depth_display, sl.PyVIEW.PyVIEW_DEPTH)
+            #zed.retrieve_image(depth_display, sl.PyVIEW.PyVIEW_DEPTH)
+            
             # Retrieve depth map. Depth is aligned on the left image
             #zed.retrieve_measure(depth, sl.PyMEASURE.PyMEASURE_DEPTH)
             # Retrieve colored point cloud. Point cloud is aligned on the left image.
@@ -57,7 +60,7 @@ def retriveDepth(q):
             if q.empty():
                 q.put(points)
             #points = points.astype(np.float32)
-            cv2.imshow("depth map", depth_display.get_data()) 
+            #cv2.imshow("depth map", depth_display.get_data()) 
             #key = cv2.waitKey(5)
             #print(i)
             #i = i + 1
@@ -68,15 +71,16 @@ def retriveDepth(q):
     zed.close()
 
 def filterDepth(q):
-    #import time
-    #time.sleep(10)
+    
     import pycuda.driver as cuda
     import pycuda.autoinit
     
     from pycuda.compiler import SourceModule
+    #something is wrong with the index
     mod = SourceModule("""
     #include <math.h>
-    __global__ void findMin(float *result,float *points,int blockX, int blockY,int sizeY)
+    #include <stdio.h>
+    __global__ void findMinInBlock(float *result,float *points,int blockX, int blockY,int sizeY)
     {
       int idx = threadIdx.x+blockIdx.x*blockDim.x;
       int idy = threadIdx.y+blockIdx.y*blockDim.y;
@@ -86,58 +90,80 @@ def filterDepth(q):
       int i,j;
       for(i = idx * blockX; i < idx * blockX + blockX; i++)
           for(j = idy * blockY; j < idy * blockY + blockY; j++){
-              if(points[2+3*(j+sizeY*i)] > 0 && points[2+3*(j+sizeY*i)] < minZ){
+              if(points[2+3*(j+sizeY*i)] > 0.7 && points[2+3*(j+sizeY*i)] < minZ){
+                  
                   minZ = points[2+3*(j+sizeY*i)];
                   minX = points[0+3*(j+sizeY*i)];
                   minY = points[1+3*(j+sizeY*i)];
         }     
         }
+     if(minZ < 0.7) printf("%5.3f ",minZ);
      result[0+5*(idy+sizeY*idx)] = minX;
      result[1+5*(idy+sizeY*idx)] = minX;
      result[2+5*(idy+sizeY*idx)] = minY;
      result[3+5*(idy+sizeY*idx)] = minY;
      result[4+5*(idy+sizeY*idx)] = minZ;
     }
-    __global__ void merge(float *result, int *flag, float *blocks,int sizeY,float threshold){
-      int idx = threadIdx.x+blockIdx.x*blockDim.x;
-      int idy = threadIdx.y+blockIdx.y*blockDim.y;
-      int i = 2*idx;
-      int j = 2*idy;
-      if(abs(3*result[4+5*(idy+sizeY*idx)]-result[4+5*(idy+1+sizeY*idx)]-result[4+5*(idy+sizeY*(idx+1))]result[4+5*(idy+1+sizeY*(idx+1))]) < threshold){
-        result[0+5*(idy+sizeY*idx)] = min(result[0+5*(idy+sizeY*idx)],result[0+5*(idy+sizeY*idx)],result[0+5*(idy+sizeY*idx)],result[0+5*(idy+sizeY*idx)]);
-        result[1+5*(idy+sizeY*idx)] = max(result[1+5*(idy+sizeY*idx)],result[1+5*(idy+sizeY*idx)],result[1+5*(idy+sizeY*idx)],result[1+5*(idy+sizeY*idx)]);
-        result[2+5*(idy+sizeY*idx)] = min(result[2+5*(idy+sizeY*idx)],result[2+5*(idy+sizeY*idx)],result[2+5*(idy+sizeY*idx)],result[2+5*(idy+sizeY*idx)]);
-        result[3+5*(idy+sizeY*idx)] = max(result[3+5*(idy+sizeY*idx)],result[3+5*(idy+sizeY*idx)],result[3+5*(idy+sizeY*idx)],result[3+5*(idy+sizeY*idx)]);
-        result[4+5*(idy+sizeY*idx)] = min(result[4+5*(idy+sizeY*idx)],result[4+5*(idy+sizeY*idx)],result[4+5*(idy+sizeY*idx)],result[4+5*(idy+sizeY*idx)]);
-        flag[idy+sizeY*idx] = 1;
-        flag[idy+1+sizeY*idx] = 1;
-        flag[idy+sizeY*(idx+1)] = 1;
-        flag[idy+1+sizeY*(idx+1)] = 1;
-      }
-    }    
     
     """)
+    
+    points_gpu = cuda.mem_alloc(np.zeros((240,1200,3),dtype = np.float32).nbytes)
+    block_gpu = cuda.mem_alloc(np.zeros((16,48,5),dtype = np.float32).nbytes)
     while True:
         if not q.empty():
+            starttime = time.time()
             points = q.get()  
-            points = points[120:240,20:620,0:3]/1000
+            points = points[240:480,40:1240,0:3]/1000
             points = points.astype(np.float32)
-            points_gpu = cuda.mem_alloc(points.nbytes)
-            cuda.memcpy_htod(points_gpu,points)
-            blocks = np.zeros((8,24,5),dtype = np.float32)#minX,maxX,minY,maxY,minZ
-            block_gpu = cuda.mem_alloc(blocks.nbytes)
-            findMinFunc = mod.get_function('findMin')
-            findMinFunc(block_gpu,points_gpu,np.int32(15),np.int32(25),np.int32(600),block = (8,24,1),grid = (1,1,1),shared = 0)
-            for i in range(3):
-                
-                
+            points[np.isnan(points)] = 20
+            points[np.isinf(points)] = 20
             
+            cuda.memcpy_htod(points_gpu,points)
+            blocks = np.ones((16,48,5),dtype = np.float32)#minX,maxX,minY,maxY,minZ
+            cuda.memcpy_htod(block_gpu,blocks)
+            findMinFunc = mod.get_function('findMinInBlock')
+            findMinFunc(block_gpu,points_gpu,np.int32(15),np.int32(25),np.int32(1200),block = (16,48,1),grid = (1,1,1),shared = 0)
+            cuda.memcpy_dtoh(blocks,block_gpu)
+            print(blocks)
+            blockNumX = 16
+            blockNumY = 48
+            flags_out = [[True for i in range(blockNumY)] for j in range(blockNumX)]
+            
+            objlist = []
+            for ite in range(4):
+                    blockNumX = int(blockNumX/2)
+                    blockNumY = int(blockNumY/2)
+                    points = blocks
+                    blocks = np.zeros((blockNumX,blockNumY,5),dtype = np.float32)
+                    flags_in = flags_out
+                    flags_out = [[False for i in range(blockNumY)] for j in range(blockNumX)]
+                    
+                    for i in range(blockNumX):
+                        for j in range(blockNumY):
+                            if flags_in[2*i][2*j] and flags_in[2*i+1][2*j] and flags_in[2*i][2*j+1] and flags_in[2*i+1][2*j+1]:
+                                varZ = np.var(points[(2*i):(2*i+2),(2*j):(2*j+2),2])
+                                
+                                if varZ < THRESHOLD:
+                                    blocks[i,j,0] = np.min(points[(2*i):(2*i+2),(2*j):(2*j+2),0])
+                                    blocks[i,j,1] = np.max(points[(2*i):(2*i+2),(2*j):(2*j+2),1])
+                                    blocks[i,j,2] = np.min(points[(2*i):(2*i+2),(2*j):(2*j+2),2])
+                                    blocks[i,j,3] = np.max(points[(2*i):(2*i+2),(2*j):(2*j+2),3])
+                                    blocks[i,j,4] = np.min(points[(2*i):(2*i+2),(2*j):(2*j+2),4])
+                                    flags_out[i][j] = True
+                                else:
+                                    
+                                    objlist.append((points[2*i,2*j,0],points[2*i,2*j,1],points[2*i,2*j,2],points[2*i,2*j,3],points[2*i,2*j,4]))
+                                    objlist.append((points[2*i+1,2*j,0],points[2*i+1,2*j,1],points[2*i+1,2*j,2],points[2*i+1,2*j,3],points[2*i+1,2*j,4]))
+                                    objlist.append((points[2*i,2*j+1,0],points[2*i,2*j+1,1],points[2*i,2*j+1,2],points[2*i,2*j+1,3],points[2*i,2*j+1,4]))
+                                    objlist.append((points[2*i+1,2*j+1,0],points[2*i+1,2*j+1,1],points[2*i+1,2*j+1,2],points[2*i+1,2*j+1,3],points[2*i+1,2*j+1,4]))
+            #print(objlist)
+                
+            print(time.time()-starttime)
 
     
     
 if __name__ == '__main__':
     q=Queue()
-    
     imageProcess=Process(target=retriveDepth,args=(q,))
     filterProcess = Process(target=filterDepth,args=(q,))
     imageProcess.start()
