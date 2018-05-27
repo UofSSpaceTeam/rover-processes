@@ -1,8 +1,8 @@
 \contentsline {section}{\numberline {1}What is a Kalman Filter}{1}{section.1}
-\contentsline {section}{\numberline {2}Variables Used}{1}{section.2}
-\contentsline {subsection}{\numberline {2.1}Main Variables}{1}{subsection.2.1}
-\contentsline {paragraph}{Q}{1}{section*.2}
-\contentsline {paragraph}{R}{1}{section*.3}
+\contentsline {section}{\numberline {2}Variables Used}{2}{section.2}
+\contentsline {subsection}{\numberline {2.1}Main Variables}{2}{subsection.2.1}
+\contentsline {paragraph}{Q}{2}{section*.2}
+\contentsline {paragraph}{R}{2}{section*.3}
 \contentsline {paragraph}{v}{2}{section*.4}
 \contentsline {paragraph}{F}{2}{section*.5}
 \contentsline {paragraph}{B}{2}{section*.6}
@@ -12,10 +12,10 @@
 \contentsline {paragraph}{u}{2}{section*.10}
 \contentsline {paragraph}{P\_cp}{2}{section*.11}
 \contentsline {paragraph}{x\_cp}{2}{section*.12}
-\contentsline {paragraph}{z}{2}{section*.13}
-\contentsline {paragraph}{K}{2}{section*.14}
-\contentsline {paragraph}{P\_cc}{2}{section*.15}
-\contentsline {paragraph}{x\_cc}{2}{section*.16}
+\contentsline {paragraph}{z}{3}{section*.13}
+\contentsline {paragraph}{K}{3}{section*.14}
+\contentsline {paragraph}{P\_cc}{3}{section*.15}
+\contentsline {paragraph}{x\_cc}{3}{section*.16}
 \contentsline {subsection}{\numberline {2.2}Other Variables}{3}{subsection.2.2}
 \contentsline {paragraph}{zone\_number/zone\_letter}{3}{section*.17}
 \contentsline {paragraph}{I}{3}{section*.18}
@@ -25,8 +25,8 @@
 \contentsline {section}{\numberline {3}The Mathematics}{3}{section.3}
 \contentsline {subsection}{\numberline {3.1}Setup}{3}{subsection.3.1}
 \contentsline {paragraph}{\textbf {F:}}{3}{section*.22}
-\contentsline {paragraph}{\textbf {B:}}{3}{section*.23}
-\contentsline {paragraph}{\textbf {H:}}{3}{section*.24}
-\contentsline {subsection}{\numberline {3.2}Predict Stage}{3}{subsection.3.2}
+\contentsline {paragraph}{\textbf {B:}}{4}{section*.23}
+\contentsline {paragraph}{\textbf {H:}}{4}{section*.24}
+\contentsline {subsection}{\numberline {3.2}Predict Stage}{4}{subsection.3.2}
 \contentsline {subsection}{\numberline {3.3}Update Stage}{4}{subsection.3.3}
-\contentsline {section}{\numberline {4}Full Code}{4}{section.4}
+\contentsline {section}{\numberline {4}Full Code}{5}{section.4}
