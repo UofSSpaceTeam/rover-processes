@@ -38,8 +38,9 @@ class JSONDriver:
 
     def write(self, msg):
         '''Send a json message to the device'''
-        b = json.encode(msg)
-        self.ser.write(b)
+        b = json.dumps(msg)
+        print(b)
+        self.ser.write(b.encode())
 
     def read(self):
         '''Read a json message from the device'''
