@@ -15,13 +15,16 @@ pygame.joystick.init()
 
 JoystickDevice = Device('JoystickDevice', 'rover', network=config.network)
 
-JoystickDevice.storage.joystick1 = pygame.joystick.Joystick(0)
-
-JoystickDevice.storage.joystick1.init()
+num_controllers = pygame.joystick.get_count()
+JoystickDevice.storage.controllers = []
+for i in range(0, num_controllers+1):
+    joystick = pygame.joystick.Joystick(i)
+    joystick.init()
+    JoystickDevice.storage.controllers.append(joystick)
 
 button_names = {'buttonA':0, 'buttonB':1, 'buttonX':2, 'buttonY':3,
         'bumperL':4, 'bumperR':5}
-JoystickDevice.storage.last_state = {key:0 for key in button_names.keys()}
+JoystickDevice.storage.last_state = [{key:0 for key in button_names.keys()}]*num_controllers
 
 ''' different operating systems have different values associated with joysticks & buttons on 
 an xbox360 controller, this function makes both os's work.
@@ -43,41 +46,42 @@ def buttonAssign():
 @JoystickDevice.every(LOOP_PERIOD)
 async def every():
     # assigns os specific joystick assignments
-    rightHor = buttonAssign()[0]
-    rightVer = buttonAssign()[1]
-    trigger = buttonAssign()[2]
-    pygame.event.get()
-    left = [JoystickDevice.storage.joystick1.get_axis(0), -JoystickDevice.storage.joystick1.get_axis(1)]
-    right = [JoystickDevice.storage.joystick1.get_axis(rightHor), -JoystickDevice.storage.joystick1.get_axis(rightVer)]
-    # windows treats two triggers as one value, so this code makes linux behave in the same way for the sake of consistency
-    if os.name == 'nt':
-        trig = JoystickDevice.storage.joystick1.get_axis(trigger)
-    else:
-        ltrig = (1 + JoystickDevice.storage.joystick1.get_axis(trigger[0]))/2
-        rtrig = (1 + JoystickDevice.storage.joystick1.get_axis(trigger[1]))/2
-        trig = rtrig - ltrig
+    for i, controller in enumerate(JoystickDevice.storage.controllers):
+        rightHor = buttonAssign()[0]
+        rightVer = buttonAssign()[1]
+        trigger = buttonAssign()[2]
+        pygame.event.get()
+        left = [controller.get_axis(0), -controller.get_axis(1)]
+        right = [controller.get_axis(rightHor), -controller.get_axis(rightVer)]
+        # windows treats two triggers as one value, so this code makes linux behave in the same way for the sake of consistency
+        if os.name == 'nt':
+            trig = controller.get_axis(trigger)
+        else:
+            ltrig = (1 + controller.get_axis(trigger[0]))/2
+            rtrig = (1 + controller.get_axis(trigger[1]))/2
+            trig = rtrig - ltrig
 
 
-    await JoystickDevice.publish('joystick1', left)
-    await JoystickDevice.publish('joystick2', right)
-    await JoystickDevice.publish('trigger', trig)
+        await JoystickDevice.publish('controller{}/joystick1'.format(i), left)
+        await JoystickDevice.publish('controller{}/joystick2'.format(i), right)
+        await JoystickDevice.publish('controller{}/trigger'.format(i), trig)
 
-    for button in button_names.keys():
-        button_val = JoystickDevice.storage.joystick1.get_button(button_names[button])
-        last_value = JoystickDevice.storage.last_state[button]
-        if button_val == 1 and last_value == 0:
-            await JoystickDevice.publish(button+'_down', button_val)
-        elif button_val == 0 and last_value == 1:
-            await JoystickDevice.publish(button+'_up', button_val)
-        await JoystickDevice.publish(button, button_val)
-        JoystickDevice.storage.last_state[button] = button_val
+        for button in button_names.keys():
+            button_val = controller.get_button(button_names[button])
+            last_value = JoystickDevice.storage.last_state[i][button]
+            if button_val == 1 and last_value == 0:
+                await JoystickDevice.publish('controller{}/{}_down'.format(i, button), button_val)
+            elif button_val == 0 and last_value == 1:
+                await JoystickDevice.publish('controller{}/{}_up'.format(i, button), button_val)
+            await JoystickDevice.publish(button, button_val)
+            JoystickDevice.storage.last_state[i][button] = button_val
 
-    dpad = JoystickDevice.storage.joystick1.get_hat(0)
-    await JoystickDevice.publish('dpad', dpad)
+        dpad = controller.get_hat(0)
+        await JoystickDevice.publish('controller{}/dpad'.format(i), dpad)
 
-    log.debug('left stick: ' + str(left))
-    log.debug('right stick: ' + str(right))
-    log.debug('trigger: ' + str(trig))
+        log.debug('left stick: ' + str(left))
+        log.debug('right stick: ' + str(right))
+        log.debug('trigger: ' + str(trig))
 
 try:
     JoystickDevice.start()
