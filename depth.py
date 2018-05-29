@@ -11,7 +11,7 @@ import time
 
 WIDTH = 1280
 HEIGHT = 720
-THRESHOLD = 1
+THRESHOLD = 0.1
 def retriveDepth(q):
    
     # Create a PyZEDCamera object
@@ -76,7 +76,7 @@ def filterDepth(q):
     import pycuda.autoinit
     
     from pycuda.compiler import SourceModule
-    #something is wrong with the index
+    
     mod = SourceModule("""
     #include <math.h>
     #include <stdio.h>
@@ -97,7 +97,7 @@ def filterDepth(q):
                   minY = points[1+3*(j+sizeY*i)];
         }     
         }
-     if(minZ < 0.7) printf("%5.3f ",minZ);
+     
      result[0+5*(idy+sizeY*idx)] = minX;
      result[1+5*(idy+sizeY*idx)] = minX;
      result[2+5*(idy+sizeY*idx)] = minY;
@@ -122,13 +122,11 @@ def filterDepth(q):
             blocks = np.ones((16,48,5),dtype = np.float32)#minX,maxX,minY,maxY,minZ
             cuda.memcpy_htod(block_gpu,blocks)
             findMinFunc = mod.get_function('findMinInBlock')
-            findMinFunc(block_gpu,points_gpu,np.int32(15),np.int32(25),np.int32(1200),block = (16,48,1),grid = (1,1,1),shared = 0)
+            findMinFunc(block_gpu,points_gpu,np.int32(15),np.int32(25),np.int32(48),block = (16,48,1),grid = (1,1,1),shared = 0)
             cuda.memcpy_dtoh(blocks,block_gpu)
-            print(blocks)
             blockNumX = 16
             blockNumY = 48
             flags_out = [[True for i in range(blockNumY)] for j in range(blockNumX)]
-            
             objlist = []
             for ite in range(4):
                     blockNumX = int(blockNumX/2)
@@ -137,12 +135,13 @@ def filterDepth(q):
                     blocks = np.zeros((blockNumX,blockNumY,5),dtype = np.float32)
                     flags_in = flags_out
                     flags_out = [[False for i in range(blockNumY)] for j in range(blockNumX)]
-                    
+                    #print(points)
                     for i in range(blockNumX):
                         for j in range(blockNumY):
                             if flags_in[2*i][2*j] and flags_in[2*i+1][2*j] and flags_in[2*i][2*j+1] and flags_in[2*i+1][2*j+1]:
-                                varZ = np.var(points[(2*i):(2*i+2),(2*j):(2*j+2),2])
-                                
+                                varZ = np.var(points[(2*i):(2*i+2),(2*j):(2*j+2),4])
+                                #print(points[(2*i):(2*i+2),(2*j):(2*j+2),4])
+                                #print(varZ)
                                 if varZ < THRESHOLD:
                                     blocks[i,j,0] = np.min(points[(2*i):(2*i+2),(2*j):(2*j+2),0])
                                     blocks[i,j,1] = np.max(points[(2*i):(2*i+2),(2*j):(2*j+2),1])
@@ -151,12 +150,13 @@ def filterDepth(q):
                                     blocks[i,j,4] = np.min(points[(2*i):(2*i+2),(2*j):(2*j+2),4])
                                     flags_out[i][j] = True
                                 else:
-                                    
+                                    #print(ite)
                                     objlist.append((points[2*i,2*j,0],points[2*i,2*j,1],points[2*i,2*j,2],points[2*i,2*j,3],points[2*i,2*j,4]))
                                     objlist.append((points[2*i+1,2*j,0],points[2*i+1,2*j,1],points[2*i+1,2*j,2],points[2*i+1,2*j,3],points[2*i+1,2*j,4]))
                                     objlist.append((points[2*i,2*j+1,0],points[2*i,2*j+1,1],points[2*i,2*j+1,2],points[2*i,2*j+1,3],points[2*i,2*j+1,4]))
                                     objlist.append((points[2*i+1,2*j+1,0],points[2*i+1,2*j+1,1],points[2*i+1,2*j+1,2],points[2*i+1,2*j+1,3],points[2*i+1,2*j+1,4]))
-            #print(objlist)
+                    
+            print(objlist)
                 
             print(time.time()-starttime)
 

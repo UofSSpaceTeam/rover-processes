@@ -2,7 +2,7 @@
 import logging
 import inspect
 
-network = '0.0.0.0/0'
+network = '10.0.0.0/24'
 
 default_level = logging.DEBUG
 level_map = {
