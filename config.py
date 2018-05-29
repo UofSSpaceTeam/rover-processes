@@ -1,8 +1,13 @@
 # Put constants/variables all processes need to share in here
 import logging
 import inspect
+import time
+import os
 
 network = '0.0.0.0/0'
+
+drive_controller = 0
+arm_controller = 1
 
 default_level = logging.DEBUG
 level_map = {
@@ -19,7 +24,11 @@ level_map = {
 
 log_filter_string = ''
 
-logfile_path = 'log.log'
+if not os.path.isdir('./logs'):
+    os.makedirs('logs')
+# Day-Month(abbrviation)-Year:24Hour:Minute
+time_string = time.strftime('%d-%b-%Y:%H:%M')
+logfile_path = './logs/{}.log'.format(time_string)
 
 def getLogger():
     frame = inspect.stack()[1]

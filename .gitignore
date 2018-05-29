@@ -3,3 +3,4 @@ src
 .DS_Store
 .idea
 *.log
+*.tar.gz

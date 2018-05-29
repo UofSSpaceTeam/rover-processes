@@ -10,6 +10,8 @@ log = config.getLogger()
 
 RPM_TO_ERPM = 12*19 # 12 poles, 19:1 gearbox
 
+CONTROLLER_NUM = config.drive_controller
+
 # Limits for Electronic RPM.
 # Note this is not the RPM of the wheel, but the
 # speed at which the motor is commutated.
@@ -54,7 +56,7 @@ DriveDevice.storage.left_rpm = 0
 DriveDevice.storage.right_rpm = 0
 DriveDevice.storage.divisor = 4
 
-@DriveDevice.on('*/joystick1')
+@DriveDevice.on('*/controller{}/joystick1'.format(CONTROLLER_NUM))
 async def joystick1_callback(joystick1, data):
     """ Handles the left wheels for manual control.
             A joystick1 message contains:
@@ -78,7 +80,7 @@ async def joystick1_callback(joystick1, data):
             await DriveDevice.publish("wheelLM", {'SetCurrent':current})
             await DriveDevice.publish("wheelLB", {'SetCurrent':current})
 
-@DriveDevice.on('*/joystick2')
+@DriveDevice.on('*/controller{}/joystick2'.format(CONTROLLER_NUM))
 async def joystick2_callback(joystick2, data):
     """ Handles the right wheels for manual control.
             A joystick1 message contains:
@@ -104,36 +106,28 @@ async def joystick2_callback(joystick2, data):
             await DriveDevice.publish("wheelRM", {'SetCurrent':current})
             await DriveDevice.publish("wheelRB", {'SetCurrent':current})
 
-@DriveDevice.on('*/Ltrigger')
-async def Ltrigger_callback(Ltrigger, trigger):
+@DriveDevice.on('*/controller{}/trigger'.format(CONTROLLER_NUM))
+async def trigger_callback(Ltrigger, trigger):
     """ Handles left wheel braking (requires current mode)"""
     if 0 < trigger <= 1 and DriveDevice.storage.drive_mode == "current":
             DriveDevice.storage.left_brake = True
             await DriveDevice.publish("wheelLF", {'SetCurrent':max_current})
             await DriveDevice.publish("wheelLM", {'SetCurrent':max_current})
             await DriveDevice.publish("wheelLB", {'SetCurrent':max_current})
-    else:
-            DriveDevice.storage.left_brake = False
-
-@DriveDevice.on('*/Rtrigger')
-async def Rtrigger_callback(Rtrigger, trigger):
-    """ Handles right wheel braking (requires current mode)"""
-    if 0 < trigger <= 1 and DriveDevice.storage.drive_mode == "current":
-            DriveDevice.storage.right_brake = True
             await DriveDevice.publish("wheelRF", {'SetCurrent':max_current})
             await DriveDevice.publish("wheelRM", {'SetCurrent':max_current})
             await DriveDevice.publish("wheelRB", {'SetCurrent':max_current})
     else:
-            DriveDevice.storage.right_brake = False
+            DriveDevice.storage.left_brake = False
 
-@DriveDevice.on('*/bumperR_down')
+@DriveDevice.on('*/controller{}/bumperR_down'.format(CONTROLLER_NUM))
 def up_shift(event, data):
     d = DriveDevice.storage.divisor/2
     d = max(MIN_DIVISOR, d)
     DriveDevice.storage.divisor = d
 
 
-@DriveDevice.on('*/bumperL_down')
+@DriveDevice.on('*/controller{}/bumperL_down'.format(CONTROLLER_NUM))
 def down_shift(event, data):
     d = DriveDevice.storage.divisor*2
     d = min(MAX_DIVISOR, d)
