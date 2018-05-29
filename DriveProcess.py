@@ -10,7 +10,7 @@ log = config.getLogger()
 
 RPM_TO_ERPM = 12*19 # 12 poles, 19:1 gearbox
 
-CONTROLLER_NUM = 0
+CONTROLLER_NUM = config.drive_controller
 
 # Limits for Electronic RPM.
 # Note this is not the RPM of the wheel, but the
