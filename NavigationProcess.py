@@ -31,6 +31,8 @@ NavDevice.storage.rover = Rover()
 NavDevice.storage.turn_direction = None
 NavDevice.storage.waypoints = []
 
+NavDevice.storage.ball = None
+
 @NavDevice.on('*/FilteredGPS')
 @NavDevice.on('*/GPSPosition')
 # @NavDevice.on('*/singlePointGPS')
@@ -60,6 +62,16 @@ def update_waypoints(event, data):
     NavDevice.storage.waypoints = data
     log.debug('Waypoints: {}'.format(data))
 
+@NavDevice.on('*/OpenMV')
+def update_ball_info(event, data):
+    if data['x'] == -1 and data['y'] == -1:
+        NavDevice.storage.ball = None
+    else:
+        ball_x = data['x'] - data['sensorWidth']/2 # distance from center of img
+        ball_y = data['y'] - data['sensorHeight']/2
+        NavDevice.storage.ball = {'x':ball_x, 'y':ball_y, 'size':data['size']}
+    log.debug(NavDevice.storage.ball)
+
 @NavDevice.on_request('RoverPosition')
 def return_position():
     pos = NavDevice.storage.rover.position
@@ -86,9 +98,15 @@ def cacluate_distance(start, dest):
     p1 = GPSPosition(*dest)
     return p0.distance(p1)
 
+<<<<<<< HEAD
 @NavDevice.on_request('DirectionToTurn')
 def return_turn_dir():
     return NavDevice.storage.turn_direction
+=======
+@NavDevice.on_request('BallPosition')
+def return_ball_pos():
+    return NavDevice.storage.ball
+>>>>>>> drive-to-ball
 
 
 NavDevice.start()
