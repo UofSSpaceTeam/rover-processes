@@ -16,9 +16,10 @@ pygame.joystick.init()
 JoystickDevice = Device('JoystickDevice', 'rover', network=config.network)
 
 num_controllers = pygame.joystick.get_count()
+log.debug('Number of connected controllers: {}'.format(num_controllers))
 JoystickDevice.storage.controllers = []
-for i in range(0, num_controllers+1):
-    joystick = pygame.joystick.Joystick(i)
+for num in range(0, num_controllers):
+    joystick = pygame.joystick.Joystick(num)
     joystick.init()
     JoystickDevice.storage.controllers.append(joystick)
 
@@ -73,7 +74,7 @@ async def every():
                 await JoystickDevice.publish('controller{}/{}_down'.format(i, button), button_val)
             elif button_val == 0 and last_value == 1:
                 await JoystickDevice.publish('controller{}/{}_up'.format(i, button), button_val)
-            await JoystickDevice.publish(button, button_val)
+            await JoystickDevice.publish('controller{}/{}'.format(i, button), button_val)
             JoystickDevice.storage.last_state[i][button] = button_val
 
         dpad = controller.get_hat(0)
