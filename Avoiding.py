@@ -40,11 +40,11 @@ async def main():
  
         err = AvoidanceDecision.storage.zed.open(AvoidanceDecision.storage.init_params)
         
-        print("check time: ", time.time() - start_time) 
+        log.debug("check time: ", time.time() - start_time) 
         failed = 0
         while err != tp.PyERROR_CODE.PySUCCESS:
             failed += 1
-            print("\rCould not open camera", failed, "times")
+            log.error("\rCould not open camera", failed, "times")
             err = AvoidanceDecision.storage.zed.open(AvoidanceDecision.storage.init_params)
         AvoidanceDecision.storage.first = False 
         # Create and set PyRuntimeParameters after opening the camera
@@ -119,11 +119,11 @@ async def main():
     total_time = time.time()-start_time
     logic_time = time.time()-start_logic_time
     startup_time = total_time-logic_time
-    print("Total elapsed time: ", total_time)
-    print("Startup time: ", startup_time)
-    print("Logic time: ", logic_time)
-    print("zone1: ", zone_count[0], "\nzone2: ", zone_count[1], "\nzone3: ", zone_count[2])
-    print("turn", turn)
+    log.debug("Total elapsed time: ", total_time)
+    log.debug("Startup time: ", startup_time)
+    log.debug("Logic time: ", logic_time)
+    log.debug("zone1: ", zone_count[0], "\nzone2: ", zone_count[1], "\nzone3: ", zone_count[2])
+    log.debug("turn", turn)
     #cv2.imshow("Frame", depth_display.get_data())
     #key = cv2.waitKey(1)
     await AvoidanceDecision.publish('DirectionToTurn', turn)
