@@ -7,7 +7,7 @@ import os
 network = '0.0.0.0/0'
 
 drive_controller = 0
-arm_controller = 1
+arm_controller = 0
 
 default_level = logging.DEBUG
 level_map = {

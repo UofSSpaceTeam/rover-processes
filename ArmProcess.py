@@ -21,6 +21,8 @@ from robocluster import Device
 import config
 log = config.getLogger()
 
+CONTROLLER_NUMBER = config.arm_controller
+
 
 base_max_speed = 3
 base_min_speed = 0.4
@@ -162,7 +164,7 @@ async def send_duties():
     await ArmDevice.publish('armWristRot', {'SetRPM':int(ArmDevice.storage.speeds[5])})
     await ArmDevice.publish('armGripperOpen', {'SetRPM':int(ArmDevice.storage.speeds[6])})
 
-@ArmDevice.on('*/joystick1')
+@ArmDevice.on('*/controller{}/joystick1'.format(CONTROLLER_NUMBER))
 async def on_joystick1(event, data):
     ''' Shoulder joint, and radius control.'''
     #print("joystick1:{}".format(data), "DEBUG")
@@ -182,7 +184,7 @@ async def on_joystick1(event, data):
             radius_speed = 0
         ArmDevice.storage.command[0] = radius_speed
 
-@ArmDevice.on('*/joystick2')
+@ArmDevice.on('*/controller{}/joystick2'.format(CONTROLLER_NUMBER))
 async def on_joystick2(event, data):
     ''' Elbow joints and z/height control'''
     y_axis = data[1]
@@ -201,14 +203,14 @@ async def on_joystick2(event, data):
             height_speed = 0
         ArmDevice.storage.command[1] = height_speed
 
-@ArmDevice.on('*/dpad')
+@ArmDevice.on('*/controller{}/dpad'.format(CONTROLLER_NUMBER))
 async def on_dpad(event, data):
     x_axis = data[0]
     y_axis = data[1]
     ArmDevice.storage.command[4] = y_axis*wrist_pitch_speed
     ArmDevice.storage.command[5] = x_axis*gripper_rotation_speed
 
-@ArmDevice.on('*/trigger')
+@ArmDevice.on('*/controller{}/trigger'.format(CONTROLLER_NUMBER))
 async def on_trigger(event, data):
     armBaseSpeed = data*base_max_speed
     if -base_min_speed < armBaseSpeed < base_min_speed:
@@ -218,7 +220,7 @@ async def on_trigger(event, data):
     elif isinstance(ArmDevice.storage.mode, PlanarControl):
         ArmDevice.storage.command[2] = armBaseSpeed
 
-@ArmDevice.on('*/buttonB_down')
+@ArmDevice.on('*/controller{}/buttonB_down'.format(CONTROLLER_NUMBER))
 async def on_buttonB_down(event, data):
     if isinstance(ArmDevice.storage.mode, ManualControl):
         ArmDevice.storage.mode = PlanarControl()
@@ -227,35 +229,35 @@ async def on_buttonB_down(event, data):
         ArmDevice.storage.mode = ManualControl()
         log.info("ManualControl")
 
-@ArmDevice.on('*/buttonA_down')
+@ArmDevice.on('*/controller{}/buttonA_down'.format(CONTROLLER_NUMBER))
 async def on_buttonA_down(event, data):
     ArmDevice.storage.command[6] = gripper_open_speed
 
-@ArmDevice.on('*/buttonA_up')
+@ArmDevice.on('*/controller{}/buttonA_up'.format(CONTROLLER_NUMBER))
 async def on_buttonA_up(event,data):
     ArmDevice.storage.command[6] = 0
 
-@ArmDevice.on('*/buttonY_up')
+@ArmDevice.on('*/controller{}/buttonY_up'.format(CONTROLLER_NUMBER))
 async def on_buttonY_up(event,data):
     ArmDevice.storage.command[6] = 0
 
-@ArmDevice.on('*/buttonY_down')
+@ArmDevice.on('*/controller{}/buttonY_down'.format(CONTROLLER_NUMBER))
 async def on_buttonY_down(event, data):
     ArmDevice.storage.command[6] = -gripper_open_speed
 
-@ArmDevice.on('*/bumperR_down')
+@ArmDevice.on('*/controller{}/bumperR_down'.format(CONTROLLER_NUMBER))
 async def on_buttonA_down(event, data):
     ArmDevice.storage.command[3] = forearm_roll_speed
 
-@ArmDevice.on('*/bumperR_up')
+@ArmDevice.on('*/controller{}/bumperR_up'.format(CONTROLLER_NUMBER))
 async def on_buttonA_up(event,data):
     ArmDevice.storage.command[3] = 0
 
-@ArmDevice.on('*/bumperL_up')
+@ArmDevice.on('*/controller{}/bumperL_up'.format(CONTROLLER_NUMBER))
 async def on_buttonY_up(event,data):
     ArmDevice.storage.command[3] = 0
 
-@ArmDevice.on('*/bumperL_down')
+@ArmDevice.on('*/controller{}/bumperL_down'.format(CONTROLLER_NUMBER))
 async def on_buttonY_down(event, data):
     ArmDevice.storage.command[3] = -forearm_roll_speed
 
