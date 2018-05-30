@@ -168,7 +168,7 @@ async def empty_drill():
 
 async def wait():
     while drill.storage.carousel_position == 'AWAY':
-        drill.sleep(0.5)
+        await drill.sleep(0.5)
 
 ### POLLS CAROUSEL POSITION ###
 #@drill.on('*/carousel_home')
@@ -188,14 +188,14 @@ async def broadcast_drill_state():
 #@drill.task
 async def main_task():
     await drill.sleep(2)
-    await wait()   
+    await wait() #will receive go signal from science module
     await go_home()
     await take_sample()
     await go_home()
-    await wait()
+    await wait() # waits for carousel to be in sample postion and send go signal
     await deposit_sample()
     await go_home()
-    await wait()
+    await wait() # waits for carousel to be in empty position and send go signal
     await empty_drill()
     await go_home()
 
