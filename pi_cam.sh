@@ -24,5 +24,5 @@ if [ $# -eq 2 ]; then
 fi
 
 
-raspivid -cs 0 --exposure $EXP -w $W -h $H -t 00 -fps $FPS -b $B -mm $MM -o - | gst-launch-1.0 fdsrc ! h264parse !  rtph264pay ! udpsink host=$HOST port=$PORT &
+raspivid -cs 0 --exposure $EXP -w $W -h $H -t 00 -fps $FPS -b $B -mm $MM -o - | gst-launch-1.0 fdsrc ! h264parse !  rtph264pay ! udpsink host=$HOST port=$PORT
 #raspivid -cs 1 --exposure $EXP -w $W -h $H -t 00 -fps $FPS -b $B -mm $MM -o - | gst-launch-1.0 fdsrc ! h264parse !  rtph264pay ! udpsink host=$HOST port=5310 &
