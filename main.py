@@ -16,6 +16,7 @@ process_list = [
     # RunOnce('Navigation', 'python3 NavigationProcess.py {}'.format(network)),
     # RunOnce('Simulator', 'python3 Simulator.py {}'.format(network)),
     RunOnce('ScienceModule', 'python3 Science.py'),
+    # RunOnce('test', 'python3 usb_send_test.py', cwd='testing'),
 ]
 
 

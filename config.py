@@ -4,7 +4,7 @@ import inspect
 import time
 import os
 
-network = '10.0.0.0/24'
+network = '0.0.0.0/0'
 
 drive_controller = 0
 arm_controller = 1
@@ -20,6 +20,7 @@ level_map = {
     'KalmanFilterProcess': default_level,
     'GPSDriver': default_level,
     'ArmProcess': default_level,
+    'JSONDriver':logging.warning,
 }
 
 log_filter_string = ''
