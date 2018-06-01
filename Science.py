@@ -161,8 +161,9 @@ async def switches(event, data):
 async def start_sci(event, data):
     log.info('starting science')
     # await ScienceDevice.sleep(2)
-    await ScienceDevice.publish('ScienceArduino', {'enable_science':1})
+    # await ScienceDevice.publish('ScienceArduino', {'enable_science':1})
     log.info('Sent science to start')
+    ScienceDevice.task(take_sample)
 
 @ScienceDevice.on('*/take_sample')
 async def sample(event, data):
