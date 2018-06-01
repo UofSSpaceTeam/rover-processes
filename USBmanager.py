@@ -70,13 +70,12 @@ def init_vesc_driver(port, ser, l):
     msg, _ = pyvesc.decode(packet)
     log.debug(msg)
     if isinstance(msg, pyvesc.ReqSubscription):
-        if msg.subscription not in ['armWrist']: # hacks for position request
-            driver.start_reader(handle_vesc_message)
         log.debug('Creating VESC driver')
         ser.close()
         driver = VESCDriver(port.device)
+        if msg.subscription not in ['armWrist']: # hacks for position request
+            driver.start_reader(handle_vesc_message)
         sub = msg.subscription
-        driver.start_reader(handle_vesc_message)
         manager.storage.drivers[sub] = driver
         manager.storage.sub_map[port.device] = sub
         # subscribe

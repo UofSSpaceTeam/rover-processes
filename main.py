@@ -12,7 +12,7 @@ process_list = [
     # RunOnce('Joystick', 'python3 JoystickProcess.py {}'.format(network)),
     # RunOnce('KalmanFilter', 'python3 KalmanFilterProcess.py {}'.format(network)),
     # RunOnce('Autopilot', 'python3 Autopilot.py {}'.format(network)),
-    # RunOnce('WebUI', 'python3 server.py {}'.format(network), cwd='rover-webui'),
+    RunOnce('WebUI', 'python3 server.py {}'.format(network), cwd='rover-webui'),
     # RunOnce('Navigation', 'python3 NavigationProcess.py {}'.format(network)),
     # RunOnce('Simulator', 'python3 Simulator.py {}'.format(network)),
     RunOnce('ScienceModule', 'python3 Science.py'),

@@ -4,6 +4,9 @@ import json
 
 import serial
 
+import config
+log = config.getLogger()
+
 class ReaderThread(threading.Thread):
     def __init__(self, driver, callback):
         super().__init__()
@@ -39,8 +42,9 @@ class JSONDriver:
     def write(self, msg):
         '''Send a json message to the device'''
         b = json.dumps(msg)
-        print(b)
-        self.ser.write(b.encode())
+        log.debug('Writing {} bytes {}'.format(len(b), b))
+        # self.ser.write(len(b))
+        self.ser.write(bytes([len(b)])+b.encode())
 
     def read(self):
         '''Read a json message from the device'''
@@ -49,6 +53,7 @@ class JSONDriver:
             size = self.ser.read(1) # this is assuming a message is less than 256 bytes
             length = int.from_bytes(size, byteorder='big')
             packet = self.ser.read(length)
+            log.debug('Reading {} bytes {}'.format(length, packet))
             return json.loads(packet.decode('utf8'))
         except json.decoder.JSONDecodeError:
             return None

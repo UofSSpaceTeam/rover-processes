@@ -4,18 +4,22 @@ import inspect
 import time
 import os
 
-network = '0.0.0.0/0'
+network = '10.0.0.0/24'
+
+drive_controller = 0
+arm_controller = 1
 
 default_level = logging.DEBUG
 level_map = {
     'Printer': default_level,
     'Autopilot': default_level,
     'USBmanager': default_level,
-    'JoystickProcess': default_level,
+    'JoystickProcess': logging.INFO,
     'NavigationProcess': default_level,
     'DriveProcess': default_level,
     'KalmanFilterProcess': default_level,
     'GPSDriver': default_level,
+    'ArmProcess': default_level,
 }
 
 log_filter_string = ''
