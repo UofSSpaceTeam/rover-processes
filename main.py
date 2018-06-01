@@ -6,7 +6,7 @@ network=config.network
 
 process_list = [
     RunOnce('USBManager', 'python3 USBmanager.py {}'.format(network)),
-    # RunOnce('Printer', 'python3 Printer.py {}'.format(network)),
+    RunOnce('Printer', 'python3 Printer.py {}'.format(network)),
     # RunOnce('GPSDriver', 'python3 GPSdriver.py {}'.format(network)),
     # RunOnce('DriveControl', 'python3 DriveProcess.py {}'.format(network)),
     # RunOnce('Joystick', 'python3 JoystickProcess.py {}'.format(network)),

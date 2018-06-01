@@ -1,4 +1,4 @@
-from Robocluster import Device
+from robocluster import Device
 
 ### CONSTANTS ###
 DRILL_RAISE_DUTY_CYCLE = 0.4*1e5    # at 12 volts
