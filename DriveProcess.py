@@ -19,7 +19,7 @@ DEADZONE = 0.1
 MAX_RPM = 40000
 MIN_RPM = 300
 MAX_RPM_CHANGE = MAX_RPM/2
-Autonav_MAX_RPM
+Autonav_MAX_RPM = 10000
 MAX_CURRENT = 1
 MIN_CURRENT = 0.1
 CURVE_VAL = 17
@@ -35,7 +35,7 @@ DirectionConstants = {
     'wheelRM':1,
     'wheelRB':1,
     'wheelLF':1,
-    'wheelLM':1,
+    'wheelLM':-1,
     'wheelLB':1,
 }
 

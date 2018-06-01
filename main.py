@@ -5,17 +5,19 @@ import config
 network=config.network
 
 process_list = [
-    # RunOnce('USBManager', 'python3 USBmanager.py {}'.format(network)),
-    # RunOnce('Printer', 'python3 Printer.py {}'.format(network)),
-    # RunOnce('GPSDriver', 'python3 GPSdriver.py {}'.format(network)),
-    # RunOnce('DriveControl', 'python3 DriveProcess.py {}'.format(network)),
-    RunOnce('Joystick', 'python3 JoystickProcess.py {}'.format(network)),
-    # RunOnce('KalmanFilter', 'python3 KalmanFilterProcess.py {}'.format(network)),
-    # RunOnce('Autopilot', 'python3 Autopilot.py {}'.format(network)),
-    RunOnce('WebUI', 'python3 server.py {}'.format(network), cwd='rover-webui'),
-    # RunOnce('Navigation', 'python3 NavigationProcess.py {}'.format(network)),
-    # RunOnce('Simulator', 'python3 Simulator.py {}'.format(network)),
-    # RunOnce('PiCam', 'bash pi_cam.sh front'),
+    RunOnce('USBManager', 'python3 USBmanager.py'),
+    RunOnce('Printer', 'python3 Printer.py'),
+    RunOnce('GPSDriver', 'python3 GPSdriver.py'),
+    RunOnce('DriveControl', 'python3 DriveProcess.py'),
+    #RunOnce('Joystick', 'python3 JoystickProcess.py'),
+    RunOnce('KalmanFilter', 'python3 KalmanFilterProcess.py'),
+    # RunOnce('Autopilot', 'python3 Autopilot.py'),
+    # RunOnce('WebUI', 'python3 server.py', cwd='rover-webui'),
+    RunOnce('Navigation', 'python3 NavigationProcess.py'),
+    # RunOnce('Simulator', 'python3 Simulator.py'),
+    #RunOnce('PiCam', 'bash pi_cam.sh front'),
+    #RunOnce('ArmProcess', 'python3 ArmProcess.py'),
+    #RunOnce('webcam', 'bash start_webcam.sh'),
 ]
 
 

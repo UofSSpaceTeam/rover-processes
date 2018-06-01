@@ -3,7 +3,7 @@ import utm as utm
 import statistics as stats
 from robocluster import Device
 import random as random
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import time
 
 import config

@@ -24,15 +24,15 @@ log = config.getLogger()
 CONTROLLER_NUMBER = config.arm_controller
 
 
-base_max_speed = 3
-base_min_speed = 0.4
-shoulder_max_speed = 2
+base_max_speed = 1
+base_min_speed = 0.2
+shoulder_max_speed = 1
 shoulder_min_speed = 0.1
 elbow_max_speed = 2
 elbow_min_speed = 0.1
 forearm_roll_speed = 2
 wrist_pitch_speed = 2
-gripper_rotation_speed = 2
+gripper_rotation_speed = 1
 gripper_open_speed = 1
 
 radius_max_speed = 2
@@ -42,7 +42,7 @@ height_min_speed = 0.2
 
 dt = 0.1
 
-ArmDevice = Device('ArmDevice','rover')
+ArmDevice = Device('ArmDevice','rover', network=config.network)
 
 ArmDevice.storage.joints_pos = None
 ArmDevice.storage.speeds = None
@@ -72,22 +72,22 @@ def setup(arm_storage):
             end_effector = 0.1)
     arm_storage.joint_limits = Joints(
             base = None,
-            shoulder = Limits(-0.09, 0.721),
-            elbow = Limits(1.392,1.699),
-            # shoulder = None,
-            # elbow = None,
+            # shoulder = Limits(-0.09, 0.721),
+            # elbow = Limits(1.392,1.699),
+            shoulder = None,
+            elbow = None,
             forearm_roll = None,
             wrist_pitch = None,
             wrist_roll = None,
             gripper = None)
     arm_storage.max_angular_velocity = Joints(
-            base = 0.6,
-            shoulder = 0.4,
-            elbow = 0.4,
-            forearm_roll = 0.4,
-            wrist_pitch = 0.4,
-            wrist_roll = 0.8,
-            gripper = 0.8)
+            base = base_max_speed,
+            shoulder = shoulder_max_speed,
+            elbow = elbow_max_speed,
+            forearm_roll = forearm_roll_speed,
+            wrist_pitch = wrist_pitch_speed,
+            wrist_roll = gripper_rotation_speed,
+            gripper = gripper_open_speed)
     arm_storage.config = Config(
             arm_storage.section_lengths,
             arm_storage.joint_limits,
@@ -156,13 +156,13 @@ async def loop():
 
 async def send_duties():
     ''' Tell each motor controller to turn on motors'''
-    await ArmDevice.publish('armBase', {'SetRPM':int(ArmDevice.storage.speeds[0])})
-    await ArmDevice.publish('armShoulder', {'SetRPM':int(ArmDevice.storage.speeds[1])})
+    await ArmDevice.publish('armBase', {'SetRPM':int(3000*ArmDevice.storage.speeds[0])})
+    await ArmDevice.publish('armShoulder', {'SetRPM':int(3000*ArmDevice.storage.speeds[1])})
     await ArmDevice.publish('armElbow', {'SetRPM':int(ArmDevice.storage.speeds[2])})
     await ArmDevice.publish('armForearmRot', {'SetRPM':int(ArmDevice.storage.speeds[3])})
     await ArmDevice.publish('armWristPitch', {'SetRPM':int(ArmDevice.storage.speeds[4])})
-    await ArmDevice.publish('armWristRot', {'SetRPM':int(ArmDevice.storage.speeds[5])})
-    await ArmDevice.publish('armGripperOpen', {'SetRPM':int(ArmDevice.storage.speeds[6])})
+    await ArmDevice.publish('armWristRot', {'SetDutyCycle':int(1e5*ArmDevice.storage.speeds[5])})
+    await ArmDevice.publish('armGripperOpen', {'SetDutyCycle':int(1e5*ArmDevice.storage.speeds[6])})
 
 @ArmDevice.on('*/controller{}/joystick1'.format(CONTROLLER_NUMBER))
 async def on_joystick1(event, data):
