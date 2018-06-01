@@ -126,17 +126,17 @@ async def wait():
     while ScienceDevice.storage.ready == 0:
         ScienceDevice.sleep(1)
 
-@ScienceDevice.every('*/science_ready')
+@ScienceDevice.on('*/science_ready')
 async def arduino_ready(event, data):
     ScienceDevice.storage.ready = data
     if data == 0:
         await wait()
 
-@ScienceDevice.every('*/carousel_position')
+@ScienceDevice.on('*/carousel_position')
 async def carousel_position(event, data):
     ScienceDevice.storage.carousel_position = data
 
-@ScienceDevice.every('*/science_limit_switches')
+@ScienceDevice.on('*/science_limit_switches')
 async def switches(event, data):
     ScienceDevice.storage.top_raise_switch = data[1]
     ScienceDevice.storage.top_lower_switch = data[2]
