@@ -21,6 +21,7 @@ level_map = {
     'GPSDriver': default_level,
     'ArmProcess': default_level,
     'Avoiding': default_level,
+    'JSONDriver':logging.warning,
 }
 
 log_filter_string = ''

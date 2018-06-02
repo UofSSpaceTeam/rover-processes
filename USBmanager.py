@@ -60,7 +60,9 @@ def handle_json_message(json_message, path):
         sub = manager.storage.sub_map[path]
         @manager.task
         async def pub_message():
-            await manager.publish(sub, json_message)
+            if type(json_message) == dict:
+                for key in json_message.keys():
+                    await manager.publish(sub+'/'+key, json_message[key])
 
 def init_vesc_driver(port, ser, l):
     to_int = lambda x: int.from_bytes(x, byteorder='big')
