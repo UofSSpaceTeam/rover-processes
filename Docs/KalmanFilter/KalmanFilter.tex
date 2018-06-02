@@ -97,6 +97,14 @@ This document serves as both general documentation of the KalmanFilterProcess2.p
 \tableofcontents
 
 \section{What is a Kalman Filter}
+According to Wikipedia:\par
+\begin{center}
+Kalman filtering, also known as linear quadratic estimation (LQE), is an algorithm that uses a series of measurements observed over time, containing statistical noise and other inaccuracies, and produces estimates of unknown variables that tend to be more accurate than those based on a single measurement alone, by estimating a joint probability distribution over the variables for each timeframe. 
+\end{center}
+An english translation by me:\par
+\begin{center}
+A user who is implementing GPS to track something such as a vehicle or aircraft knows the limitations of the movements of that craft and therefore can ignore any erratic motion and can also help predict the next GPS location based on the previous reading and other measurements of the motion of the craft such as accelerometer readings etc. For example, if you are tracking a car driving 100km/h north and all of a sudden your GPS reading is 5m south of the previous location, you as the user knows that is impossible. For our implementation with the rover we take GPS readings and accelerometer data and "slam it together" to get an accurate position of the rover. 
+\end{center}
 \section{Variables Used}
 \textbf{Note}: Short single letter variable names were chosen to match popular convention. This also makes it easier to follow the mathematics that the code is heavily reliant on. 
 \subsection{Main Variables}

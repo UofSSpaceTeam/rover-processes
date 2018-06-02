@@ -28,7 +28,10 @@ NavDevice = Device('Navigation', 'rover', network=config.network)
 
 NavDevice.storage.rover = Rover()
 # NavDevice.storage.waypoints = [(52.132866, -106.628012)]
+NavDevice.storage.turn_direction = None
 NavDevice.storage.waypoints = []
+
+NavDevice.storage.ball = None
 
 @NavDevice.on('*/FilteredGPS')
 @NavDevice.on('*/GPSPosition')
@@ -50,10 +53,24 @@ def compas_callback(event, data):
 async def accelerometer_callback(event, data):
     await NavDevice.publish('Acceleration', [data['x'], -data['y']])
 
+@NavDevice.on('*/DirectionToTurn')
+async def update_turn_dircetion(event, data):
+    NavDevice.storage.turn_direction = data
+
 @NavDevice.on('*/sendWaypoints')
 def update_waypoints(event, data):
     NavDevice.storage.waypoints = data
     log.debug('Waypoints: {}'.format(data))
+
+@NavDevice.on('*/OpenMV')
+def update_ball_info(event, data):
+    if data['x'] == -1 and data['y'] == -1:
+        NavDevice.storage.ball = None
+    else:
+        ball_x = data['x'] - data['sensorWidth']/2 # distance from center of img
+        ball_y = data['y'] - data['sensorHeight']/2
+        NavDevice.storage.ball = {'x':ball_x, 'y':ball_y, 'size':data['size']}
+    log.debug(NavDevice.storage.ball)
 
 @NavDevice.on_request('RoverPosition')
 def return_position():
@@ -80,6 +97,16 @@ def cacluate_distance(start, dest):
     p0 = GPSPosition(*start)
     p1 = GPSPosition(*dest)
     return p0.distance(p1)
+
+<<<<<<< HEAD
+@NavDevice.on_request('DirectionToTurn')
+def return_turn_dir():
+    return NavDevice.storage.turn_direction
+=======
+@NavDevice.on_request('BallPosition')
+def return_ball_pos():
+    return NavDevice.storage.ball
+>>>>>>> drive-to-ball
 
 
 NavDevice.start()

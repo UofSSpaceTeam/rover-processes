@@ -18,6 +18,7 @@ process_list = [
     #RunOnce('PiCam', 'bash pi_cam.sh front'),
     #RunOnce('ArmProcess', 'python3 ArmProcess.py'),
     #RunOnce('webcam', 'bash start_webcam.sh'),
+    # RunOnce('ObstacleDetection', 'python3 Avoidance.py'),
 ]
 
 
