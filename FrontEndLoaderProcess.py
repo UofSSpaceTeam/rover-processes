@@ -26,7 +26,7 @@ async def joystick1_callback(joystick1, data):
         return
 
     duty_cycle = y_axis*MAX_DUTY_CYCLE)
-    if (duty_cycle > MIN_DUTY_CYCLE):
+    if (abs(duty_cycle) > MIN_DUTY_CYCLE):
         await FELoaderDevice.publish('loaderBody', {'SetDutyCycle': int(MAX_DUTY_CYCLE*y_axis)})
     else:
         await FELoaderDevice.publish('loaderBody', {'SetDutyCycle': 0)})
@@ -43,7 +43,7 @@ async def joystick2_callback(joystick2, data):
         return
     
     duty_cycle = y_axis*MAX_DUTY_CYCLE)
-    if (duty_cycle > MIN_DUTY_CYCLE):
+    if (abs(duty_cycle) > MIN_DUTY_CYCLE):
         await FELoaderDevice.publish('loaderBucket', {'SetDutyCycle': int(MAX_DUTY_CYCLE*y_axis)})
     else:
         await FELoaderDevice.publish('loaderBucket', {'SetDutyCycle': 0)})
