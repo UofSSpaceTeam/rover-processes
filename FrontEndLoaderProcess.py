@@ -39,3 +39,5 @@ async def joystick2_callback(joystick2, data):
     
     await FELoaderDevice.publish('loaderBucket', {'SetDutyCycle':int(MAX_DUTY_CYCLE*y_axis)})
 
+FELoaderDevice.start()
+FELoaderDevice.wait()
