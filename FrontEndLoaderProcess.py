@@ -1,7 +1,7 @@
 from robocluster import Device
 import config
 
-log = config.logger
+log = config.getLogger()
 CONTROLLER_NUM = config.front_end_loader_controller
 
 
@@ -11,7 +11,7 @@ FELoaderDevice = Device('FELoaderDevice', 'rover', network=config.network)
 
 # Initialize setup variables
 MAX_DUTY_CYCLE = 1e5
-MIN_DUTY_CYCLE = 100
+MIN_DUTY_CYCLE = 1e4
 
 
 # Joystick Callback Functions
@@ -25,11 +25,11 @@ async def joystick1_callback(joystick1, data):
     if y_axis is None:
         return
 
-    duty_cycle = y_axis*MAX_DUTY_CYCLE)
+    duty_cycle = y_axis*MAX_DUTY_CYCLE
     if (abs(duty_cycle) > MIN_DUTY_CYCLE):
         await FELoaderDevice.publish('loaderBody', {'SetDutyCycle': int(MAX_DUTY_CYCLE*y_axis)})
     else:
-        await FELoaderDevice.publish('loaderBody', {'SetDutyCycle': 0)})
+        await FELoaderDevice.publish('loaderBody', {'SetDutyCycle': 0})
 
 
 @FELoaderDevice.on('*/controller{}/joystick2'.format(CONTROLLER_NUM))
@@ -42,11 +42,11 @@ async def joystick2_callback(joystick2, data):
     if y_axis is None:
         return
     
-    duty_cycle = y_axis*MAX_DUTY_CYCLE)
+    duty_cycle = y_axis*MAX_DUTY_CYCLE
     if (abs(duty_cycle) > MIN_DUTY_CYCLE):
         await FELoaderDevice.publish('loaderBucket', {'SetDutyCycle': int(MAX_DUTY_CYCLE*y_axis)})
     else:
-        await FELoaderDevice.publish('loaderBucket', {'SetDutyCycle': 0)})
+        await FELoaderDevice.publish('loaderBucket', {'SetDutyCycle': 0})
 
 
 FELoaderDevice.start()
