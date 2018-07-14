@@ -1,16 +1,12 @@
-#   Process to move drill in order to take soil sample, deposit sample, and empty the rest of the drill
-#   Should not be able to operate unless carousel is in certain positions
-#   There should be a check added to make sure the rover isn't moving, and to block rover movement while drill is extended
-#   Constants still need to be set
-#   top motor = motor controlling stage 1 of drill
-#   bottom motor = motor controlling stage 2 of drill
-#   should change motor naming scheme if time
-
-from robocluster import Device
-import time 
+rom robocluster import Device
+import time
+import pygame
+import config
+log = config.getLogger()
 
 ### CREATE DEVICE ###
 drill = Device('Drill', 'rover')
+JoystickDevice = Device('JoystickDevice', 'rover', network=config.network)
 
 ### CONSTANTS - NOT ALL SET AT THE MOMENT ###
 TOP_VERT_DISTANCE = 150 #350 # mm
@@ -23,215 +19,143 @@ DRILL_LOWER_DUTY_CYCLE = 0.3*1e5    # at 12 volts
 ROTATION_SPEED = 2e3                # at 12 volts
 SAMPLE_HOLDER_HEIGHT = 100
 STOP_ABOVE_GROUND = 1 # mm
+DEADZONE = 0.2 #analog joysticks arent perfect
+TRIG_DEADZONE = 0.05
 
-### INITIALIZTION ###
+done = False
+
+
+'''### INITIALIZTION ###
 drill.storage.top_motor_movement = 0
 drill.storage.bottom_motor_movement = 0
 drill.storage.rotating = False
 drill.storage.top_distance = 0
 drill.storage.bottom_distance = 0
-drill.storage.carousel_position = 'EMPTY'
+drill.storage.carousel_position = 'EMPTY'''
 
-### FUNCTIONS ###
-async def top_is_moving():
-    if drill.storage.top_motor_movement == 1:
-        return 'RAISING'
-    elif drill.storage.top_motor_movement == 2:
-        return 'LOWERING'
+### CONSTANTS ###
+DRILL_RAISE_DUTY_CYCLE = 0.2*1e5    # at 12 volts
+DRILL_LOWER_DUTY_CYCLE = 0.1*1e5    # at 12 volts
+ROTATION_SPEED = 2e3                # at 12 volts
+SLEEP_DURATION = 0.1 #seconds
+controller_num = config.science_controller
+
+### INITIALIZTION ###
+ScienceDevice = Device('ScienceModule', 'rover', network=config.network)
+motor_movement_types = ['stopped', 'raising', 'lowering']
+
+ScienceDevice.storage.top_motor_movement = top_move
+ScienceDevice.storage.bottom_motor_movement = bot_move
+ScienceDevice.storage.rotation_direction = rot_move
+ScienceDevice.storage.carousel_position = 'home'
+ScienceDevice.storage.ready = 0
+ScienceDevice.storage.top_raise_switch = 0
+ScienceDevice.storage.top_lower_switch = 0
+ScienceDevice.storage.bottom_raise_switch = 0
+ScienceDevice.storage.bottom_lower_switch = 0
+ScienceDevice.storage.sample_switch = 0
+ScienceDevice.storage.empty_switch = 0
+
+top_move = 'stopped'
+bot_move = 'stopped'
+rot_move = 'stopped'
+
+
+@ScienceDevice.on('*/controller{}/joystick1'.format(controller_num))
+async def top_motor_movement(joystick1, data):
+    global top_move
+    axis = data[1]
+
+    if axis is None:
+        return
     else:
-        return 'STOPPED'
+        duty_cycle = axis*DRILL_RAISE_DUTY_CYCLE
 
-async def bottom_is_moving():
-    if drill.storage.bottom_motor_movement == 1:
-        return 'RAISING'
-    elif drill.storage.bottom_motor_movement == 2:
-        return 'LOWERING'
+    if -DEADZONE < axis < DEADZONE:
+        top_move = 'stopped'
+        await ScienceDevice.publish('DrillBottom', {'SetDutyCycle': int(0)})
+    elif axis > DEADZONE:
+        top_move = 'raising'
+        await ScienceDevice.publish('DrillTop', {'SetDutyCycle': int(duty_cycle)})
+    elif axis < -DEADZONE:
+        top_move = 'lowering'
+        await ScienceDevice.publish('DrillTop', {'SetDutyCycle': int(duty_cycle)})
     else:
-        return 'STOPPED'
+        await ScienceDevice.publish('DrillTop', {'SetDutyCycle': int(0)})
 
-async def is_spinning():
-    if drill.storage.rotating == True:
-        return 'MOVING'
+    #ScienceDevice.top_motor_movement = top_move
+    log.debug('setting top movement to {}'.format(top_move))
+    await ScienceDevice.sleep(SLEEP_DURATION)
+
+@ScienceDevice.on('*/controller{}/joystick2.'.format(controller_num))
+async def top_motor_movement(joystick2, data):
+    global bot_move
+    axis = data[1]
+
+    if axis is None:
+            return
     else:
-        return 'STOPPED'
+        duty_cycle = axis * DRILL_RAISE_DUTY_CYCLE
 
+    if -DEADZONE < axis < DEADZONE:
+        bot_move = 'stopped'
+        await ScienceDevice.publish('DrillBottom', {'SetDutyCycle': int(0)})
+    elif axis > DEADZONE:
+        bot_move = 'raising'
+        await ScienceDevice.publish('DrillBottom', {'SetDutyCycle': int(duty_cycle)})
+    elif axis < -DEADZONE:
+        bot_move = 'lowering'
+        await ScienceDevice.publish('DrillBottom', {'SetDutyCycle': int(duty_cycle)})
+    else:
+        await ScienceDevice.publish('DrillBottom', {'SetDutyCycle': int(0)})
+
+    #ScienceDevice.bottom_motor_movement = bot_move
+    log.debug('setting bottom movement to {}'.format(bot_move))
+    await ScienceDevice.sleep(SLEEP_DURATION)
+
+@ScienceDevice.on('*/controller{}/trigger.'.format(controller_num))
+async def set_drill_rotation(trigger, data):
+    global rot_move
+    axis = data
+
+    if axis is None:
+        return
+    else:
+        duty_cycle = axis * ROTATION_SPEED
+
+    if -TRIG_DEADZONE < axis < TRIG_DEADZONE:
+        rot_move = 'stopped'
+        await ScienceDevice.publish('DrillSpin', {'SetRPM': int(duty_cycle)})
+    elif axis > TRIG_DEADZONE:
+        rot_move = 'digging'
+        await ScienceDevice.publish('DrillSpin', {'SetRPM': int(0)})
+    elif axis < -TRIG_DEADZONE:
+        rot_move = 'retracting'
+        await ScienceDevice.publish('DrillSpin', {'SetRPM': int(duty_cycle)})
+    else:
+        log.error("motor rotation invalid value {}".format(rot_move))
+        return
+
+    log.debug('Setting rotation movement to {}'.format(rot_move))
+    #ScienceDevice,rotation_direction = rot_move
+    await ScienceDevice.sleep(SLEEP_DURATION)
+
+@ScienceDevice.on('controller{}/{}_down'.format(controller_num, 'buttonB'))
 async def hard_stop():
-    stop_rotation()
-    stop_bottom()
-    stop_top()
 
-async def raise_top():    
-    drill.storage.top_motor_movement = 1
-    await drill.publish('DrillTop', {'SetDutyCycle':int((-1)*DRILL_RAISE_DUTY_CYCLE)})
-    await drill.sleep(0.01)
+    global top_move, bot_move, rot_move
 
-async def raise_bottom():
-    drill.storage.bottom_motor_movement = 1
-    await drill.publish('DrillBottom', {'SetDutyCycle':int((-1)*DRILL_RAISE_DUTY_CYCLE)})
-    await drill.sleep(0.01)
+        top_move = 'stopped'
+        bot_move = 'stopped'
+        rot_move = 'stopped'
+        await ScienceDevice.publish('ScienceArduino', {'enable_science': 1})
 
-async def lower_top():
-    drill.storage.top_motor_movement = 2
-    await drill.publish('DrillTop', {'SetDutyCycle':int(DRILL_LOWER_DUTY_CYCLE)})
-    await drill.sleep(0.01)
 
-async def lower_bottom():
-    drill.storage.bottom_motor_movement = 2
-    await drill.publish('DrillBottom', {'SetDutyCycle':int(DRILL_LOWER_DUTY_CYCLE)})
-    await drill.sleep(0.01)
-
-async def stop_top():
-    await drill.publish('DrillTop', {'SetDutyCycle':0})
-    drill.storage.top_motor_movement = 0
-    await drill.sleep(0.01)
-
-async def stop_bottom():
-    await drill.publish('DrillBottom', {'SetDutyCycle':0})
-    drill.storage.bottom_motor_movement = 0
-    await drill.sleep(0.01)
-
-async def start_rotation():
-    drill.storage.rotating = True
-    await drill.publish('DrillSpin', {'SetRPM':int(ROTATION_SPEED)})
-    await drill.sleep(0.01)
-
-async def stop_rotation():
-    await drill.publish('DrillSpin', {'SetRPM':0})
-    await drill.sleep(0.01)
-    drill.storage.rotating = False
-
-async def go_home():
-    hard_stop()
-    if drill.storage.home_switch == True:
-        pass
-    while drill.storage.home_switch == False:
-        raise_bottom()
-        raise_top()
-    drill.storage.top_distance = 0
-    drill.storage.bottom_distance = 0
-    hard_stop()
-
-async def take_sample():
-    top_lower_start = time.time()
-    while drill.storage.carousel_position == 'HOME' and drill.storage.top_distance <= TOP_VERT_DISTANCE:
-        lower_top()
-        #drill.storage.top_distance = TOP_ONE_ROT*(DRILL_SPEED/60)*(time.time() - top_lower_start)
-        if drill.storage.distance_above_ground <= STOP_ABOVE_GROUND:
-            stop_top()
-            break
-
-    bottom_lower_start = time.time()
-    while drill.storage.carousel_position == 'HOME' and drill.storage.bottom_distance <= BOTTOM_VERT_DISTANCE:
-        lower_bottom()
-        #drill.storage.bottom_distance = BOTTOM_ONE_ROT*(DRILL_SPEED/60)*(time.time() - bottom_lower_start)
-        if drill.storage.bottom_distance > START_ROT_DISTANCE:
-            start_rotation()
-
-    bottom_raise_start = time.time()
-    while drill.storage.carousel_position == 'HOME' and drill.storage.bottom_distance >= 0:
-        raise_bottom()
-        #drill.storage.bottom_distance -= BOTTOM_ONE_ROT*(DRILL_SPEED/60)*(time.time() - bottom_raise_start)
-        if drill.storage.home_switch == True:
-            break
-        if drill.storage.bottom_distance < START_ROT_DISTANCE:
-            stop_rotation()
- 
-    top_raise_start = time.time()
-    while drill.storage.carousel_position == 'HOME' and drill.storage.top_distance >= 0:
-        raise_top()
-        #drill.storage.top_distance -= TOP_ONE_ROT*(DRILL_SPEED/60)*(time.time() - top_raise_start)
-        if drill.storage.home_switch == True:
-            break
-
-async def deposit_sample():
-    if drill.storage.carousel_position == 'SAMPLE':
-        await stop_rotation()
-        for count in range (2):
-            while drill.storage.top_distance <= SAMPLE_HOLDER_HEIGHT:
-                await lower_top()
-            time.sleep(5)
-            while drill.storage.top_distance >= 0:
-                raise_top()
-                if drill.storage.home_switch == True:
-                    break
-
-async def empty_drill():
-    if drill.storage.carousel_position == 'EMPTY':
-        await stop_rotation()
-        while drill.storage.top_distance <= SAMPLE_HOLDER_HEIGHT:
-            await lower_top()
-        await drill.sleep(5)
-        while drill.storage.top_distance >= 0:
-            await raise_top()
-            if drill.storage.home_switch == True:
-                break
-
-async def wait():
-    while drill.storage.carousel_position == 'AWAY':
-        await drill.sleep(0.5)
-
-### POLLS CAROUSEL POSITION ###
-#@drill.on('*/carousel_home')
-async def update_carousel_position(event, data):
-    drill.storage.carousel_position = data
-
-### BROADCASTS CURRENT DRILL STATE ###
-@drill.on
-async def broadcast_drill_state():
-    await drill.publish('DrillSpinState', is_spinning())
-    await drill.publish('DrillTopState', top_is_moving())
-    await drill.publish('DrillBottomState', bottom_is_moving())
-    await drill.publish('DrillTopPosition', drill.storage.top_distance)
-    await drill.publish('DrillBottomPosition', drill.storage.bottom_distance)
-
-### MAIN TASK ###
-#@drill.task
-async def main_task():
-    await drill.sleep(2)
-    await wait() #will receive go signal from science module
-    await go_home()
-    await take_sample()
-    await go_home()
-    await wait() # waits for carousel to be in sample postion and send go signal
-    await deposit_sample()
-    await go_home()
-    await wait() # waits for carousel to be in empty position and send go signal
-    await empty_drill()
-    await go_home()
-
-### TEST TASK ###
-@drill.task
-async def test_task():
-    await drill.sleep(2)
-    drill.storage.carousel_position = 'EMPTY'
-    start = time.time()
-    x = 0
-    while (x - start) <= 4:
-        await lower_top()
-        x = time.time()
-    await stop_top()
-    await drill.sleep(3)
-    while (x - start) <= 8:
-        await raise_top()
-        x = time.time()
-        await drill.sleep(3)
-    while (x - start) <= 15:
-        await start_rotation()
-        x = time.time()
-    await stop_rotation()
-
-drill.start()
-drill.wait()
+ScienceDevice.start()
+ScienceDevice.wait()
 
 
 
-
-
-
-
-    
-
-    
 
 
 
