@@ -1,121 +1,62 @@
-rom robocluster import Device
-import time
-import pygame
+from robocluster import Device
 import config
 log = config.getLogger()
 
-### CREATE DEVICE ###
-drill = Device('Drill', 'rover')
-JoystickDevice = Device('JoystickDevice', 'rover', network=config.network)
-
-### CONSTANTS - NOT ALL SET AT THE MOMENT ###
-TOP_VERT_DISTANCE = 150 #350 # mm
-TOP_ONE_ROT = 65.7 # mm
-BOTTOM_ONE_ROT = 0
-BOTTOM_VERT_DISTANCE = 0
-START_ROT_DISTANCE = 0
+#CONSTANTS
 DRILL_RAISE_DUTY_CYCLE = 0.4*1e5    # at 12 volts
 DRILL_LOWER_DUTY_CYCLE = 0.3*1e5    # at 12 volts
 ROTATION_SPEED = 2e3                # at 12 volts
-SAMPLE_HOLDER_HEIGHT = 100
-STOP_ABOVE_GROUND = 1 # mm
-DEADZONE = 0.2 #analog joysticks arent perfect
+DEADZONE = 0.2 #joysticks arent perfect
 TRIG_DEADZONE = 0.05
-
-done = False
-
-
-'''### INITIALIZTION ###
-drill.storage.top_motor_movement = 0
-drill.storage.bottom_motor_movement = 0
-drill.storage.rotating = False
-drill.storage.top_distance = 0
-drill.storage.bottom_distance = 0
-drill.storage.carousel_position = 'EMPTY'''
-
-### CONSTANTS ###
-DRILL_RAISE_DUTY_CYCLE = 0.2*1e5    # at 12 volts
-DRILL_LOWER_DUTY_CYCLE = 0.1*1e5    # at 12 volts
-ROTATION_SPEED = 2e3                # at 12 volts
-SLEEP_DURATION = 0.1 #seconds
 controller_num = config.science_controller
 
-### INITIALIZTION ###
-ScienceDevice = Device('ScienceModule', 'rover', network=config.network)
-motor_movement_types = ['stopped', 'raising', 'lowering']
+#INITIALIZTION
+DrillDevice = Device('ScienceModule', 'rover', network=config.network)
+DrillDevice.storage.top_motor_movement = 'stopped'
+DrillDevice.storage.bottom_motor_movement = 'stopped'
+DrillDevice.storage.rotation_direction = 'stopped'
 
-ScienceDevice.storage.top_motor_movement = top_move
-ScienceDevice.storage.bottom_motor_movement = bot_move
-ScienceDevice.storage.rotation_direction = rot_move
-ScienceDevice.storage.carousel_position = 'home'
-ScienceDevice.storage.ready = 0
-ScienceDevice.storage.top_raise_switch = 0
-ScienceDevice.storage.top_lower_switch = 0
-ScienceDevice.storage.bottom_raise_switch = 0
-ScienceDevice.storage.bottom_lower_switch = 0
-ScienceDevice.storage.sample_switch = 0
-ScienceDevice.storage.empty_switch = 0
-
-top_move = 'stopped'
-bot_move = 'stopped'
-rot_move = 'stopped'
-
-
-@ScienceDevice.on('*/controller{}/joystick1'.format(controller_num))
-async def top_motor_movement(joystick1, data):
-    global top_move
+@DrillDevice.on('*/controller{}/joystick1'.format(controller_num))
+async def set_top_movement(joystick1, data):
+    top_move = DrillDevice.storage.top_motor_movement
     axis = data[1]
 
     if axis is None:
         return
     else:
-        duty_cycle = axis*DRILL_RAISE_DUTY_CYCLE
+        duty_cycle = axis * DRILL_RAISE_DUTY_CYCLE
 
     if -DEADZONE < axis < DEADZONE:
         top_move = 'stopped'
-        await ScienceDevice.publish('DrillBottom', {'SetDutyCycle': int(0)})
-    elif axis > DEADZONE:
-        top_move = 'raising'
-        await ScienceDevice.publish('DrillTop', {'SetDutyCycle': int(duty_cycle)})
-    elif axis < -DEADZONE:
-        top_move = 'lowering'
-        await ScienceDevice.publish('DrillTop', {'SetDutyCycle': int(duty_cycle)})
+        await DrillDevice.publish('DrillBottom', {'SetDutyCycle': int(0)})
     else:
-        await ScienceDevice.publish('DrillTop', {'SetDutyCycle': int(0)})
+        top_move = 'moving'
+        await DrillDevice.publish('DrillTop', {'SetDutyCycle': int(duty_cycle)})
 
-    #ScienceDevice.top_motor_movement = top_move
     log.debug('setting top movement to {}'.format(top_move))
-    await ScienceDevice.sleep(SLEEP_DURATION)
 
-@ScienceDevice.on('*/controller{}/joystick2.'.format(controller_num))
-async def top_motor_movement(joystick2, data):
-    global bot_move
+@DrillDevice.on('*/controller{}/joystick2.'.format(controller_num))
+async def set_bottom_movement(joystick2, data):
+    bot_move = DrillDevice.storage.bottom_motor_movement
     axis = data[1]
 
     if axis is None:
-            return
+        return
     else:
         duty_cycle = axis * DRILL_RAISE_DUTY_CYCLE
 
     if -DEADZONE < axis < DEADZONE:
         bot_move = 'stopped'
-        await ScienceDevice.publish('DrillBottom', {'SetDutyCycle': int(0)})
-    elif axis > DEADZONE:
-        bot_move = 'raising'
-        await ScienceDevice.publish('DrillBottom', {'SetDutyCycle': int(duty_cycle)})
-    elif axis < -DEADZONE:
-        bot_move = 'lowering'
-        await ScienceDevice.publish('DrillBottom', {'SetDutyCycle': int(duty_cycle)})
+        await DrillDevice.publish('DrillBottom', {'SetDutyCycle': int(0)})
     else:
-        await ScienceDevice.publish('DrillBottom', {'SetDutyCycle': int(0)})
+        bot_move = 'moving'
+        await DrillDevice.publish('DrillBottom', {'SetDutyCycle': int(duty_cycle)})
 
-    #ScienceDevice.bottom_motor_movement = bot_move
     log.debug('setting bottom movement to {}'.format(bot_move))
-    await ScienceDevice.sleep(SLEEP_DURATION)
 
-@ScienceDevice.on('*/controller{}/trigger.'.format(controller_num))
+@DrillDevice.on('*/controller{}/trigger.'.format(controller_num))
 async def set_drill_rotation(trigger, data):
-    global rot_move
+    rot_move = DrillDevice.storage.rotation_direction
     axis = data
 
     if axis is None:
@@ -125,34 +66,34 @@ async def set_drill_rotation(trigger, data):
 
     if -TRIG_DEADZONE < axis < TRIG_DEADZONE:
         rot_move = 'stopped'
-        await ScienceDevice.publish('DrillSpin', {'SetRPM': int(duty_cycle)})
-    elif axis > TRIG_DEADZONE:
-        rot_move = 'digging'
-        await ScienceDevice.publish('DrillSpin', {'SetRPM': int(0)})
-    elif axis < -TRIG_DEADZONE:
-        rot_move = 'retracting'
-        await ScienceDevice.publish('DrillSpin', {'SetRPM': int(duty_cycle)})
+        await DrillDevice.publish('DrillSpin', {'SetRPM': int(0)})
     else:
-        log.error("motor rotation invalid value {}".format(rot_move))
-        return
+        rot_move = 'moving'
+        await DrillDevice.publish('DrillSpin', {'SetRPM': int(duty_cycle)})
 
     log.debug('Setting rotation movement to {}'.format(rot_move))
-    #ScienceDevice,rotation_direction = rot_move
-    await ScienceDevice.sleep(SLEEP_DURATION)
 
-@ScienceDevice.on('controller{}/{}_down'.format(controller_num, 'buttonB'))
+@DrillDevice.on('controller{}/{}_down'.format(controller_num, 'buttonB'))
 async def hard_stop():
 
-    global top_move, bot_move, rot_move
+    top_move = DrillDevice.storage.top_motor_movement
+    bot_move = DrillDevice.storage.bottom_motor_movement
+    rot_move = DrillDevice.storage.rotation_direction
 
-        top_move = 'stopped'
-        bot_move = 'stopped'
-        rot_move = 'stopped'
-        await ScienceDevice.publish('ScienceArduino', {'enable_science': 1})
+    await DrillDevice.publish('DrillTop', {'SetDutyCycle': int(0)})
+    await DrillDevice.publish('DrillBottom', {'SetDutyCycle': int(0)})
+    await DrillDevice.publish('DrillSpin', {'SetRPM': int(0)})
 
+    DrillDevice.storage.top_motor_movement = 'stopped'
+    DrillDevice.storage.bottom_motor_movement = 'stopped'
+    DrillDevice.storage.rotation_direction = 'stopped'
 
-ScienceDevice.start()
-ScienceDevice.wait()
+    log.debug('setting top movement to {}'.format(top_move))
+    log.debug('setting bottom movement to {}'.format(bot_move))
+    log.debug('Setting rotation movement to {}'.format(rot_move))
+
+DrillDevice.start()
+DrillDevice.wait()
 
 
 

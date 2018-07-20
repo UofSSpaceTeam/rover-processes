@@ -8,6 +8,7 @@ network = '10.0.0.0/24'
 
 drive_controller = 0
 arm_controller = 1
+drill_controller = 0
 
 default_level = logging.DEBUG
 level_map = {
