@@ -9,7 +9,7 @@ process_list = [
     RunOnce('Printer', 'python3 Printer.py'),
     # RunOnce('GPSDriver', 'python3 GPSdriver.py'),
     # RunOnce('DriveControl', 'python3 DriveProcess.py'),
-    RunOnce('Joystick', 'python3 JoystickProcess.py'),
+    # RunOnce('Joystick', 'python3 JoystickProcess.py'),
     # RunOnce('KalmanFilter', 'python3 KalmanFilterProcess.py'),
     # RunOnce('Autopilot', 'python3 Autopilot.py'),
     # RunOnce('WebUI', 'python3 server.py', cwd='rover-webui'),
@@ -19,7 +19,8 @@ process_list = [
     #RunOnce('ArmProcess', 'python3 ArmProcess.py'),
     #RunOnce('webcam', 'bash start_webcam.sh'),
     # RunOnce('ObstacleDetection', 'python3 Avoidance.py'),
-    RunOnce('FrontEndLoader', 'python3 FrontEndLoaderProcess.py')
+    # RunOnce('FrontEndLoader', 'python3 FrontEndLoaderProcess.py'),
+    RunOnce('LoadCell', 'python3 LoadCell.py')
 ]
 
 
