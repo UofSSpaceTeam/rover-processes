@@ -150,7 +150,7 @@ async def loop():
 
     #publish speeds/duty cycles here
     log.debug("joints_pos: {}".format(ArmDevice.storage.joints_pos))
-    # log.debug("speeds: {}".format(ArmDevice.storage.speeds))
+    log.debug("speeds: {}".format(ArmDevice.storage.speeds))
 
     await send_duties()
 
@@ -158,9 +158,9 @@ async def send_duties():
     ''' Tell each motor controller to turn on motors'''
     await ArmDevice.publish('armBase', {'SetRPM':int(3000*ArmDevice.storage.speeds[0])})
     await ArmDevice.publish('armShoulder', {'SetRPM':int(3000*ArmDevice.storage.speeds[1])})
-    await ArmDevice.publish('armElbow', {'SetRPM':int(ArmDevice.storage.speeds[2])})
-    await ArmDevice.publish('armForearmRot', {'SetRPM':int(ArmDevice.storage.speeds[3])})
-    await ArmDevice.publish('armWristPitch', {'SetRPM':int(ArmDevice.storage.speeds[4])})
+    await ArmDevice.publish('armElbow', {'SetRPM':int(3000*ArmDevice.storage.speeds[2])})
+    await ArmDevice.publish('armForearmRot', {'SetRPM':int(3000*ArmDevice.storage.speeds[3])})
+    await ArmDevice.publish('armWristPitch', {'SetRPM':int(3000*ArmDevice.storage.speeds[4])})
     await ArmDevice.publish('armWristRot', {'SetDutyCycle':int(1e5*ArmDevice.storage.speeds[5])})
     await ArmDevice.publish('armGripperOpen', {'SetDutyCycle':int(1e5*ArmDevice.storage.speeds[6])})
 
