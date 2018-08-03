@@ -1,54 +1,41 @@
 from rtlsdr import RtlSdr
 #import matplotlib.pyplot as plt
-
+import time
 import numpy as np
-sdr = RtlSdr(serial_number='00000001')
-#sdr = RtlSdr()
+import random
 
-sdr.sample_rate = 2.048e6
-#sdr.center_freq = 462.5625e6
+sdr = RtlSdr(serial_number='00000001')
+
+N = 8
+sdr.sample_rate = 2e6
 sdr.freq_correction = -4
 sdr.gain = "auto"
 sdr.center_freq = 433.5e6
-
 sdr.set_bandwidth(500e3)
 
-#samples = sdr.read_samples(256*1024)
-#sdr.close()
-
-#power,psdFreq = plt.psd(samples,NFFT=1024,Fs=sdr.sample_rate/1e6,Fc=sdr.center_freq/1e6)
-#plt.xlabel("freq")
-#plt.ylabel("Power")
-
-#plt.show()
-#print("getting serial")
-#print(samples)
-#print(RtlSdr.get_device_serial_addresses())
-
-#powerDb = 10*np.log10(power)
-
-#maxPower = max(powerDb)
-#maxInd =powerDb.tolist().index(maxPower)
-#maxFreq = psdFreq[maxInd]
-
-#print(maxPower)
-#print(maxFreq)
-
-
-#fft = np.fft.fft(samples)
-
-#freqs = np.fft.fftfreq(len(samples))
-
-
+p_max_avg = []
+ 
 def print_data(data,obj):
-    #print(data)
-    for x in range(len(data)):
-        I = np.real(data[x])
-        Q = np.imag(data[x])
-        P_dBm = 10 * np.log10(10 * (np.power(I,2) + np.power(Q,2)))
-        print(P_dBm)
+    global p_max_avg
+    s_avg = []
+    s_pwr = 10 * np.log10(np.absolute(data))
+    for x in range(1,len(data)-N,N):
+        s_avg.append(sum(s_pwr[x:x+N-1]))
+    p_max = max(s_avg)
+    if (len(p_max_avg) < 3):
+        p_max_avg.append(p_max)
+    else:
+        print(sum(p_max_avg)/float(len(p_max_avg)))
+        p_max_avg = []
 
-sdr.read_samples_async(print_data,256)
+try:
+    sdr.read_samples_async(print_data,256)
+
+except KeyboardInterrupt:
+    sdr.cancel_read_async()
+    sdr.close()
+    print("cancelled")
+
 
 
 
