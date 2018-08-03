@@ -9,15 +9,18 @@ log = config.getLogger()
 
 DATA_INTERVAL = 100
 SERIAL_NUMBER = 532721
-CHANNEL = 2
 
 LoadDevice = Device('LoadCell', 'rover', network=config.network)
 
 def on_Voltage(ph, voltageRatio):
     log.info(voltageRatio)
+    if ph.channel == 0:
+        weight = -1458158.99582*float(voltageRatio) - 189.327364017 + 1.6
+    else:
+        weight = 531250*float(voltageRatio) + 75.086875 + 4.9
     @LoadDevice.task
     async def send_reading():
-        await LoadDevice.publish('LoadCell', voltageRatio)
+        await LoadDevice.publish('load_cell_weight', [ph.channel, weight])
 
 
 def onErrorHandler(ph, errorCode, errorString):
@@ -30,16 +33,20 @@ def onAttachHandler(ph):
         # print("\tSetting VoltageRatio SensorType")
         ph.setSensorType(VoltageRatioSensorType.SENSOR_TYPE_VOLTAGERATIO)
 
-channel = VoltageRatioInput()
-channel.setDeviceSerialNumber(SERIAL_NUMBER)
-channel.setChannel(CHANNEL)
-channel.setIsHubPortDevice(False)
-channel.setHubPort(-1)
+channels = []
+for i in range(2):
+    channel = VoltageRatioInput()
+    channel.setDeviceSerialNumber(SERIAL_NUMBER)
+    channel.setChannel(i)
+    channel.setIsHubPortDevice(False)
+    channel.setHubPort(-1)
 
-channel.setOnAttachHandler(onAttachHandler)
-channel.setOnErrorHandler(onErrorHandler)
-channel.setOnVoltageRatioChangeHandler(on_Voltage)
-channel.openWaitForAttachment(5000)
+    channel.setOnAttachHandler(onAttachHandler)
+    channel.setOnErrorHandler(onErrorHandler)
+    channel.setOnVoltageRatioChangeHandler(on_Voltage)
+    channel.openWaitForAttachment(5000)
+
+    channels[i] = channel
 
 LoadDevice.start()
 LoadDevice.wait()
