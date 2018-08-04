@@ -29,7 +29,13 @@ async def set_top_movement(joystick1, data):
         DrillDevice.storage.top_motor_movement = 'stopped'
         await DrillDevice.publish('DrillTop', {'SetDutyCycle': int(0)})
     else:
-        DrillDevice.storage.top_motor_movement = 'moving'
+        #limit switches triggered to prevent user from damaging motors
+        #theres two for each stage (top and bottom) of the motor
+        if (DrillDevice.storage.top_raise_switch == 1 and duty_cycle > 0) or \
+                (DrillDevice.storage.top_lower_switch == 1 and duty_cycle < 0):
+            DrillDevice.storage.top_motor_movement = 'stopped'
+        else:
+            DrillDevice.storage.top_motor_movement = 'moving'
         await DrillDevice.publish('DrillTop', {'SetDutyCycle': int(duty_cycle)})
 
     log.debug('setting top movement to {}'.format(DrillDevice.storage.top_motor_movement))
@@ -47,7 +53,12 @@ async def set_bottom_movement(joystick2, data):
         DrillDevice.storage.bottom_motor_movement = 'stopped'
         await DrillDevice.publish('DrillSpin', {'SetDutyCycle': int(0)})
     else:
-        DrillDevice.storage.bottom_motor_movement = 'moving'
+        #limit switch check
+        if (DrillDevice.storage.bottom_raise_switch == 1 and duty_cycle > 0) or \
+                (DrillDevice.storage.bottom_lower_switch == 1 and duty_cycle < 0):
+            DrillDevice.storage.top_motor_movement = 'stopped'
+        else:
+            DrillDevice.storage.top_motor_movement = 'moving'
         await DrillDevice.publish('DrillSpin', {'SetDutyCycle': int(duty_cycle)})
 
     log.debug('setting bottom movement to {}'.format(DrillDevice.storage.bottom_motor_movement))
@@ -84,16 +95,6 @@ async def hard_stop():
     log.debug('setting top movement to {}'.format(DrillDevice.storage.top_motor_movement))
     log.debug('setting bottom movement to {}'.format(DrillDevice.storage.bottom_motor_movement))
     log.debug('Setting rotation movement to {}'.format(DrillDevice.storage.rotation_direction))
-
-@ScienceDevice.on('*/science_limit_switches')
-async def switches(event, data):
-    log.debug('Updating limit switches {}'.format(data))
-    ScienceDevice.storage.top_raise_switch = data[0]
-    ScienceDevice.storage.top_lower_switch = data[1]
-    ScienceDevice.storage.bottom_raise_switch = data[2]
-    ScienceDevice.storage.bottom_lower_switch = data[3]
-    ScienceDevice.storage.sample_switch = data[4]
-    ScienceDevice.storage.empty_switch = data[5]
 
 DrillDevice.start()
 DrillDevice.wait()
