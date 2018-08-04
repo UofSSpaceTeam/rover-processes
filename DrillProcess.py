@@ -85,6 +85,16 @@ async def hard_stop():
     log.debug('setting bottom movement to {}'.format(DrillDevice.storage.bottom_motor_movement))
     log.debug('Setting rotation movement to {}'.format(DrillDevice.storage.rotation_direction))
 
+@ScienceDevice.on('*/science_limit_switches')
+async def switches(event, data):
+    log.debug('Updating limit switches {}'.format(data))
+    ScienceDevice.storage.top_raise_switch = data[0]
+    ScienceDevice.storage.top_lower_switch = data[1]
+    ScienceDevice.storage.bottom_raise_switch = data[2]
+    ScienceDevice.storage.bottom_lower_switch = data[3]
+    ScienceDevice.storage.sample_switch = data[4]
+    ScienceDevice.storage.empty_switch = data[5]
+
 DrillDevice.start()
 DrillDevice.wait()
 
