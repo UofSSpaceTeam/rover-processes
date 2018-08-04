@@ -1,8 +1,13 @@
 from rtlsdr import RtlSdr
-#import matplotlib.pyplot as plt
 import time
 import numpy as np
 import random
+
+from robocluster import Device
+import config
+log = config.getLogger()
+
+RDFDevice = Device('RDF', 'rover', network=config.network)
 
 sdr = RtlSdr(serial_number='00000001')
 
@@ -25,10 +30,15 @@ def print_data(data,obj):
     if (len(p_max_avg) < 3):
         p_max_avg.append(p_max)
     else:
-        print(sum(p_max_avg)/float(len(p_max_avg)))
+        value = sum(p_max_avg)/float(len(p_max_avg))
+        log.debug(value)
+        @RDFDevice.task
+        async def send_power():
+            await RDFDevice.publish('YagiPower', value)
         p_max_avg = []
 
 try:
+    RDFDevice.start()
     sdr.read_samples_async(print_data,256)
 
 except KeyboardInterrupt:
