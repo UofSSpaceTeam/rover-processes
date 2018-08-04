@@ -34,9 +34,10 @@ async def set_top_movement(joystick1, data):
         if (DrillDevice.storage.top_raise_switch == 1 and duty_cycle > 0) or \
                 (DrillDevice.storage.top_lower_switch == 1 and duty_cycle < 0):
             DrillDevice.storage.top_motor_movement = 'stopped'
+            await DrillDevice.publish('DrillTop', {'SetDutyCycle': int(0)})
         else:
             DrillDevice.storage.top_motor_movement = 'moving'
-        await DrillDevice.publish('DrillTop', {'SetDutyCycle': int(duty_cycle)})
+            await DrillDevice.publish('DrillTop', {'SetDutyCycle': int(duty_cycle)})
 
     log.debug('setting top movement to {}'.format(DrillDevice.storage.top_motor_movement))
 
@@ -57,9 +58,10 @@ async def set_bottom_movement(joystick2, data):
         if (DrillDevice.storage.bottom_raise_switch == 1 and duty_cycle > 0) or \
                 (DrillDevice.storage.bottom_lower_switch == 1 and duty_cycle < 0):
             DrillDevice.storage.top_motor_movement = 'stopped'
+            await DrillDevice.publish('DrillSpin', {'SetDutyCycle': int(0)})
         else:
             DrillDevice.storage.top_motor_movement = 'moving'
-        await DrillDevice.publish('DrillSpin', {'SetDutyCycle': int(duty_cycle)})
+            await DrillDevice.publish('DrillSpin', {'SetDutyCycle': int(duty_cycle)})
 
     log.debug('setting bottom movement to {}'.format(DrillDevice.storage.bottom_motor_movement))
 
