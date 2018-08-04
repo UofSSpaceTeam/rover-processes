@@ -3,12 +3,12 @@ import config
 log = config.getLogger()
 
 #CONSTANTS
-DRILL_RAISE_DUTY_CYCLE = 0.4*1e5    # at 12 volts
-DRILL_LOWER_DUTY_CYCLE = 0.3*1e5    # at 12 volts
-ROTATION_SPEED = 2e3                # at 12 volts
+DRILL_RAISE_DUTY_CYCLE = 1e5    # at 12 volts
+DRILL_LOWER_DUTY_CYCLE = 1e5    # at 12 volts
+ROTATION_SPEED = 4e3                # at 12 volts
 DEADZONE = 0.2 #joysticks arent perfect
 TRIG_DEADZONE = 0.05
-controller_num = config.science_controller
+controller_num = config.drill_controller
 
 #INITIALIZTION
 DrillDevice = Device('DrillDevice', 'rover', network=config.network)
@@ -27,14 +27,14 @@ async def set_top_movement(joystick1, data):
 
     if -DEADZONE < axis < DEADZONE:
         DrillDevice.storage.top_motor_movement = 'stopped'
-        await DrillDevice.publish('DrillBottom', {'SetDutyCycle': int(0)})
+        await DrillDevice.publish('DrillTop', {'SetDutyCycle': int(0)})
     else:
         DrillDevice.storage.top_motor_movement = 'moving'
         await DrillDevice.publish('DrillTop', {'SetDutyCycle': int(duty_cycle)})
 
     log.debug('setting top movement to {}'.format(DrillDevice.storage.top_motor_movement))
 
-@DrillDevice.on('*/controller{}/joystick2.'.format(controller_num))
+@DrillDevice.on('*/controller{}/joystick2'.format(controller_num))
 async def set_bottom_movement(joystick2, data):
     axis = data[1]
 
@@ -45,14 +45,14 @@ async def set_bottom_movement(joystick2, data):
 
     if -DEADZONE < axis < DEADZONE:
         DrillDevice.storage.bottom_motor_movement = 'stopped'
-        await DrillDevice.publish('DrillBottom', {'SetDutyCycle': int(0)})
+        await DrillDevice.publish('DrillSpin', {'SetDutyCycle': int(0)})
     else:
         DrillDevice.storage.bottom_motor_movement = 'moving'
-        await DrillDevice.publish('DrillBottom', {'SetDutyCycle': int(duty_cycle)})
+        await DrillDevice.publish('DrillSpin', {'SetDutyCycle': int(duty_cycle)})
 
     log.debug('setting bottom movement to {}'.format(DrillDevice.storage.bottom_motor_movement))
 
-@DrillDevice.on('*/controller{}/trigger.'.format(controller_num))
+@DrillDevice.on('*/controller{}/trigger'.format(controller_num))
 async def set_drill_rotation(trigger, data):
     axis = data
 
@@ -63,10 +63,10 @@ async def set_drill_rotation(trigger, data):
 
     if -TRIG_DEADZONE < axis < TRIG_DEADZONE:
         DrillDevice.storage.rotation_direction = 'stopped'
-        await DrillDevice.publish('DrillSpin', {'SetRPM': int(0)})
+        await DrillDevice.publish('DrillBottom', {'SetRPM': int(0)})
     else:
         DrillDevice.storage.rotation_direction = 'moving'
-        await DrillDevice.publish('DrillSpin', {'SetRPM': int(duty_cycle)})
+        await DrillDevice.publish('DrillBottom', {'SetRPM': int(duty_cycle)})
 
     log.debug('Setting rotation movement to {}'.format(DrillDevice.storage.rotation_direction))
 
