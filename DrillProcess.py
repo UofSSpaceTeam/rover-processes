@@ -4,7 +4,7 @@ log = config.getLogger()
 
 #CONSTANTS
 DRILL_RAISE_DUTY_CYCLE = 1e5    # at 12 volts
-DRILL_LOWER_DUTY_CYCLE = 1e5    # at 12 volts
+DRILL_LOWER_DUTY_CYCLE = 5e4    # at 12 volts
 ROTATION_SPEED = 4e3                # at 12 volts
 DEADZONE = 0.2 #joysticks arent perfect
 TRIG_DEADZONE = 0.05
@@ -41,7 +41,7 @@ async def set_bottom_movement(joystick2, data):
     if axis is None:
         return
     else:
-        duty_cycle = axis * DRILL_RAISE_DUTY_CYCLE
+        duty_cycle = axis * DRILL_LOWER_DUTY_CYCLE
 
     if -DEADZONE < axis < DEADZONE:
         DrillDevice.storage.bottom_motor_movement = 'stopped'

@@ -9,17 +9,18 @@ process_list = [
     RunOnce('Printer', 'python3 Printer.py'),
     # RunOnce('GPSDriver', 'python3 GPSdriver.py'),
     # RunOnce('DriveControl', 'python3 DriveProcess.py'),
-    RunOnce('Joystick', 'python3 JoystickProcess.py'),
+    # RunOnce('Joystick', 'python3 JoystickProcess.py'),
     # RunOnce('KalmanFilter', 'python3 KalmanFilterProcess.py'),
     # RunOnce('Autopilot', 'python3 Autopilot.py'),
-    # RunOnce('WebUI', 'python3 server.py', cwd='rover-webui'),
+    RunOnce('WebUI', 'python3 server.py', cwd='rover-webui'),
     # RunOnce('Navigation', 'python3 NavigationProcess.py'),
     # RunOnce('Simulator', 'python3 Simulator.py'),
     #RunOnce('PiCam', 'bash pi_cam.sh front'),
     #RunOnce('ArmProcess', 'python3 ArmProcess.py'),
     #RunOnce('webcam', 'bash start_webcam.sh'),
     # RunOnce('ObstacleDetection', 'python3 Avoidance.py'),
-    RunOnce('ScienceDrill', 'python3 DrillProcess.py'),
+    # RunOnce('ScienceDrill', 'python3 DrillProcess.py'),
+    RunOnce('ScienceControll', 'python3 NewScience.py'),
 ]
 
 
