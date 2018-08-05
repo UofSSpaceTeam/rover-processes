@@ -1,6 +1,7 @@
 from robocluster import Device
 
 ScienceDevice = Device('ScienceDevice', 'rover')
+ScienceDevice.storage.zero_switch = 0
 
 
 @ScienceDevice.on('*/move_carousel')
@@ -36,10 +37,14 @@ async def stage_two(event, data):
 def save_sample(event, data):
     ScienceDevice.storage.samples.append(data)
 
-@ScienceDevice.every('100ms')
-async def poll_detector():
-    await ScienceDevice.publish('ScienceArduino', {'take_reading': 0})
+# @ScienceDevice.every('100ms')
+# async def poll_detector():
+#     await ScienceDevice.publish('ScienceArduino', {'take_reading': 0})
 
+@ScienceDevice.on('*/science_limit_switches')
+async def switches(event, data):
+    # log.debug('Updating limit switches {}'.format(data))
+    ScienceDevice.storage.zero_switch = data[2]
 
 ScienceDevice.storage.samples = []
 
