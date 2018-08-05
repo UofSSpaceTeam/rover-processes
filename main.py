@@ -19,6 +19,7 @@ process_list = [
     #RunOnce('ArmProcess', 'python3 ArmProcess.py'),
     #RunOnce('webcam', 'bash start_webcam.sh'),
     # RunOnce('ObstacleDetection', 'python3 Avoidance.py'),
+    RunOnce('ScienceDrill', 'python3 DrillProcess.py'),
     RunOnce('FrontEndLoader', 'python3 FrontEndLoaderProcess.py')
 ]
 
