@@ -27,18 +27,24 @@ CONTROLLER_NUMBER = config.arm_controller
 base_max_speed = 1
 base_min_speed = 0.2
 shoulder_max_speed = 1
-shoulder_min_speed = 0.1
-elbow_max_speed = 2
-elbow_min_speed = 0.1
+shoulder_min_speed = 0.2
+elbow_max_speed = 1
+elbow_min_speed = 0.05
 forearm_roll_speed = 1
-wrist_pitch_speed = 2
+wrist_pitch_speed = 1
 gripper_rotation_speed = 1
 gripper_open_speed = 1
 
-radius_max_speed = 2
+radius_max_speed = 1
 radius_min_speed = 0.2
-height_max_speed = 2
+height_max_speed = 1
 height_min_speed = 0.2
+
+base_erpm = 5000
+shoulder_erpm = 5000
+elbow_erpm = (shoulder_erpm/4/2400)* (12*176.4)
+manual_elbow_erpm = 2000
+wrist_pitch_erpm = 2000
 
 dt = 0.1
 
@@ -67,13 +73,13 @@ def setup(arm_storage):
     arm_storage.speeds = Joints(0,0,0,0,0,0,0)
     arm_storage.command = [0,0,0,0,0,0,0]
     arm_storage.section_lengths = Sections( #TODO: update lengths
-            upper_arm = 0.35,
-            forearm = 0.42,
+            upper_arm = 0.411,
+            forearm = 0.444,
             end_effector = 0.1)
     arm_storage.joint_limits = Joints(
             base = None,
-            shoulder = Limits(-0.096, 0.153),
-            elbow = Limits(1.101,2.158),
+            shoulder = Limits(-0.155, 0.387),
+            elbow = Limits(0.644,2.108),
             # shoulder = None,
             # elbow = None,
             forearm_roll = None,
@@ -97,8 +103,8 @@ def setup(arm_storage):
     arm_storage.devices = {}
     #joint_offesets are values in degrees to 'zero' the encoder angle
     arm_storage.joint_offsets = {
-        'armShoulder':-335.3247,
-        'armElbow':-283.3374+90,
+        'armShoulder':-324.29444,
+        'armElbow':-283.0957+90,
         'armForearmRot':0,
         'armWristPitch':0,
     }
@@ -125,7 +131,7 @@ async def get_positions():
     new_joints = list(ArmDevice.storage.joints_pos)
     for i, device in enumerate(["armShoulder", "armElbow", "armWristPitch"]):
         resp = await ArmDevice.request('USBManager', device, {'GetRotorPosition':0})
-        log.debug(resp)
+        # log.debug(resp)
         if resp == 'no such endpoint':
             continue
         reading = get_pos_field(resp)
@@ -143,7 +149,7 @@ async def get_positions():
 
 @ArmDevice.every(dt)
 async def loop():
-    ArmDevice.storage.joints_pos = await get_positions()
+    # ArmDevice.storage.joints_pos = await get_positions()
     # ArmDevice.storage.joints_pos = simulate_positions()
     log.debug("command: {}".format(ArmDevice.storage.command))
     ArmDevice.storage.controller.user_command(ArmDevice.storage.mode, *ArmDevice.storage.command) #Keep an eye on that pointer.
@@ -157,11 +163,11 @@ async def loop():
 
 async def send_duties():
     ''' Tell each motor controller to turn on motors'''
-    await ArmDevice.publish('armBase', {'SetRPM':int(5000*ArmDevice.storage.speeds[0])})
-    await ArmDevice.publish('armShoulder', {'SetRPM':int(5000*ArmDevice.storage.speeds[1])})
-    await ArmDevice.publish('armElbow', {'SetRPM':int(500*ArmDevice.storage.speeds[2])})
+    await ArmDevice.publish('armBase', {'SetRPM':int(base_erpm*ArmDevice.storage.speeds[0])})
+    await ArmDevice.publish('armShoulder', {'SetRPM':int(shoulder_erpm*ArmDevice.storage.speeds[1])})
+    await ArmDevice.publish('armElbow', {'SetRPM':int(elbow_erpm*ArmDevice.storage.speeds[2])})
     await ArmDevice.publish('armForearmRot', {'SetRPM':int(3000*ArmDevice.storage.speeds[3])})
-    await ArmDevice.publish('armWristPitch', {'SetRPM':int(1000*ArmDevice.storage.speeds[4])})
+    await ArmDevice.publish('armWristPitch', {'SetRPM':int(wrist_pitch_erpm*ArmDevice.storage.speeds[4])})
     await ArmDevice.publish('armWristRot', {'SetDutyCycle':int(1e5*ArmDevice.storage.speeds[5])})
     await ArmDevice.publish('armGripperOpen', {'SetDutyCycle':int(1e5*ArmDevice.storage.speeds[6])})
 
@@ -197,7 +203,7 @@ async def on_joystick2(event, data):
             armY_ElbowSpeed = 0
         ArmDevice.storage.command[2] = armY_ElbowSpeed
     elif isinstance(ArmDevice.storage.mode, PlanarControl):
-        y_axis = (y_axis * height_max_speed)
+        y_axis = -1*(y_axis * height_max_speed)
         if y_axis > height_min_speed or y_axis < -height_min_speed:
             height_speed = y_axis
         else:
