@@ -15,9 +15,9 @@ LoadDevice = Device('LoadCell', 'rover', network=config.network)
 def on_Voltage(ph, voltageRatio):
     log.info(voltageRatio)
     if ph.channel == 0:
-        weight = -1458158.99582*float(voltageRatio) - 189.327364017 + 1.6
+        weight = 8316008.31601*float(voltageRatio) - 585.072765073
     else:
-        weight = 531250*float(voltageRatio) + 75.086875 + 4.9
+        weight = 385728.061716*float(voltageRatio) + 95.2285438766
     @LoadDevice.task
     async def send_reading():
         await LoadDevice.publish('load_cell_weight', [ph.channel, weight])
