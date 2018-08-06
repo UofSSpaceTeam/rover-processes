@@ -6,3 +6,4 @@ numpy
 matplotlib
 pygame
 aiohttp
+libraries/Phidget22Python
