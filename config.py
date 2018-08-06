@@ -9,6 +9,7 @@ network = '0.0.0.0/0'
 
 drive_controller = 0
 arm_controller = 1
+drill_controller = 0
 front_end_loader_controller = 0
 
 default_level = logging.DEBUG
@@ -23,7 +24,7 @@ level_map = {
     'GPSDriver': default_level,
     'ArmProcess': default_level,
     'Avoiding': default_level,
-    'JSONDriver':logging.warning,
+    'JSONDriver': default_level
 }
 
 log_filter_string = ''
