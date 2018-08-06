@@ -165,7 +165,10 @@ async def send_duties():
     ''' Tell each motor controller to turn on motors'''
     await ArmDevice.publish('armBase', {'SetRPM':int(base_erpm*ArmDevice.storage.speeds[0])})
     await ArmDevice.publish('armShoulder', {'SetRPM':int(shoulder_erpm*ArmDevice.storage.speeds[1])})
-    await ArmDevice.publish('armElbow', {'SetRPM':int(elbow_erpm*ArmDevice.storage.speeds[2])})
+    if isinstance(ArmDevice.storage.mode, ManualControl):
+        await ArmDevice.publish('armElbow', {'SetRPM':int(manual_elbow_erpm*ArmDevice.storage.speeds[2])})
+    else:
+        await ArmDevice.publish('armElbow', {'SetRPM':int(elbow_erpm*ArmDevice.storage.speeds[2])})
     await ArmDevice.publish('armForearmRot', {'SetRPM':int(3000*ArmDevice.storage.speeds[3])})
     await ArmDevice.publish('armWristPitch', {'SetRPM':int(wrist_pitch_erpm*ArmDevice.storage.speeds[4])})
     await ArmDevice.publish('armWristRot', {'SetDutyCycle':int(1e5*ArmDevice.storage.speeds[5])})
