@@ -30,6 +30,7 @@ NavDevice.storage.rover = Rover()
 # NavDevice.storage.waypoints = [(52.132866, -106.628012)]
 NavDevice.storage.turn_direction = None
 NavDevice.storage.waypoints = []
+NavDevice.storage.yagipower = [None]*36
 
 NavDevice.storage.ball = None
 
@@ -38,6 +39,13 @@ NavDevice.storage.ball = None
 # @NavDevice.on('*/singlePointGPS')
 def udpate_position(event, data):
     NavDevice.storage.rover.position = GPSPosition(*data)
+
+@NavDevice.on('*/YagiPower')
+async def update_rdf_power(event, data):
+    heading = NavDevice.storage.rover.heading
+    angle = math.floor(heading/10)
+    NavDevice.storage.yagipower[angle] = data
+    await NavDevice.publish('RDF_readings')
 
 @NavDevice.on('*/roverHeading')
 def update_heading(event, data):
