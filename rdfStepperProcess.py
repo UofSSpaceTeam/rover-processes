@@ -1,8 +1,7 @@
 import RPi.GPIO as GPIO
-import time 
+import time
 from robocluster import Device
 import config
-
 
 ## Define RPi GPIO Pins
 out1 = 13
@@ -12,8 +11,8 @@ out4 = 12
 
 ## Define Positional Constants
 i=0
-positive=0
-negative=0
+POSITIVE=0
+NEGATIVE=0
 y=0
 
 ## Set GPIO Pins
@@ -32,36 +31,38 @@ StepperDevice = Device('RDFStepperMotor', 'rover', network=config.network)
 async def rotate_stepper(StepperRotation, data):
     """
     Handles rotating the RDF Yagi Antenna based on WebUI Input
+
+    Input:
+        Primitive String, sent from WebUI via robocluster API
     """
     x = int(data)
     GPIO.output(out1,GPIO.LOW)
     GPIO.output(out2,GPIO.LOW)
     GPIO.output(out3,GPIO.LOW)
     GPIO.output(out4,GPIO.LOW)
-    x = input()
-    if x>0 and x<=400:
-        for y in range(x,0,-1):
-            if negative==1:
+    if (x > 0) and (x <= 400):
+        for y in range(x, 0, -1):
+            if NEGATIVE==1:
                 if i==7:
                     i=0
                 else:
-                    i=i+1
-                y=y+2
-                negative=0
-            positive=1
+                    i = i + 1
+                y = y + 2
+                NEGATIVE = 0
+            POSITIVE = 1
             if i==0:
                 GPIO.output(out1,GPIO.HIGH)
                 GPIO.output(out2,GPIO.LOW)
                 GPIO.output(out3,GPIO.LOW)
                 GPIO.output(out4,GPIO.LOW)
-                time.sleep(0.03)
+                time.sleep(0.03)    # Beneficial to use async sleep method?
             elif i==1:
                 GPIO.output(out1,GPIO.HIGH)
                 GPIO.output(out2,GPIO.HIGH)
                 GPIO.output(out3,GPIO.LOW)
                 GPIO.output(out4,GPIO.LOW)
                 time.sleep(0.03)
-            elif i==2:  
+            elif i==2:
                 GPIO.output(out1,GPIO.LOW)
                 GPIO.output(out2,GPIO.HIGH)
                 GPIO.output(out3,GPIO.LOW)
@@ -98,21 +99,21 @@ async def rotate_stepper(StepperRotation, data):
                 GPIO.output(out4,GPIO.HIGH)
                 time.sleep(0.03)
             if i==7:
-                i=0
+                i = 0
                 continue
-            i=i+1
-        
-    elif x<0 and x>=-400:
-        x=x*-1
-        for y in range(x,0,-1):
-            if positive==1:
+            i = i + 1
+
+    elif (x < 0) and (x >= -400):
+        x = (x * -1)
+        for y in range(x, 0, -1):
+            if POSITIVE==1:
                 if i==0:
-                    i=7
+                    i = 7
                 else:
-                    i=i-1
-                y=y+3
-                positive=0
-            negative=1
+                    i = i - 1
+                y = y + 3
+                POSITIVE = 0
+            NEGATIVE = 1
             if i==0:
                 GPIO.output(out1,GPIO.HIGH)
                 GPIO.output(out2,GPIO.LOW)
@@ -162,9 +163,9 @@ async def rotate_stepper(StepperRotation, data):
                 GPIO.output(out4,GPIO.HIGH)
                 time.sleep(0.03)
             if i==0:
-                i=7
+                i = 7
                 continue
-            i=i-1 
+            i = i - 1
 
 StepperDevice.start()
 StepperDevice.wait()
