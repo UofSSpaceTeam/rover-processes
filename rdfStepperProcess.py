@@ -15,6 +15,8 @@ POSITIVE=0
 NEGATIVE=0
 y=0
 
+sleep_time = 0.03
+
 ## Set GPIO Pins
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(out1,GPIO.OUT)
@@ -55,49 +57,49 @@ async def rotate_stepper(StepperRotation, data):
                 GPIO.output(out2,GPIO.LOW)
                 GPIO.output(out3,GPIO.LOW)
                 GPIO.output(out4,GPIO.LOW)
-                time.sleep(0.03)    # Beneficial to use async sleep method?
+                await StepperDevice.sleep(sleep_time)
             elif i==1:
                 GPIO.output(out1,GPIO.HIGH)
                 GPIO.output(out2,GPIO.HIGH)
                 GPIO.output(out3,GPIO.LOW)
                 GPIO.output(out4,GPIO.LOW)
-                time.sleep(0.03)
+                await StepperDevice.sleep(sleep_time)
             elif i==2:
                 GPIO.output(out1,GPIO.LOW)
                 GPIO.output(out2,GPIO.HIGH)
                 GPIO.output(out3,GPIO.LOW)
                 GPIO.output(out4,GPIO.LOW)
-                time.sleep(0.03)
+                await StepperDevice.sleep(sleep_time)
             elif i==3:
                 GPIO.output(out1,GPIO.LOW)
                 GPIO.output(out2,GPIO.HIGH)
                 GPIO.output(out3,GPIO.HIGH)
                 GPIO.output(out4,GPIO.LOW)
-                time.sleep(0.03)
+                await StepperDevice.sleep(sleep_time)
             elif i==4:
                 GPIO.output(out1,GPIO.LOW)
                 GPIO.output(out2,GPIO.LOW)
                 GPIO.output(out3,GPIO.HIGH)
                 GPIO.output(out4,GPIO.LOW)
-                time.sleep(0.03)
+                await StepperDevice.sleep(sleep_time)
             elif i==5:
                 GPIO.output(out1,GPIO.LOW)
                 GPIO.output(out2,GPIO.LOW)
                 GPIO.output(out3,GPIO.HIGH)
                 GPIO.output(out4,GPIO.HIGH)
-                time.sleep(0.03)
+                await StepperDevice.sleep(sleep_time)
             elif i==6:
                 GPIO.output(out1,GPIO.LOW)
                 GPIO.output(out2,GPIO.LOW)
                 GPIO.output(out3,GPIO.LOW)
                 GPIO.output(out4,GPIO.HIGH)
-                time.sleep(0.03)
+                await StepperDevice.sleep(sleep_time)
             elif i==7:
                 GPIO.output(out1,GPIO.HIGH)
                 GPIO.output(out2,GPIO.LOW)
                 GPIO.output(out3,GPIO.LOW)
                 GPIO.output(out4,GPIO.HIGH)
-                time.sleep(0.03)
+                await StepperDevice.sleep(sleep_time)
             if i==7:
                 i = 0
                 continue
@@ -119,49 +121,49 @@ async def rotate_stepper(StepperRotation, data):
                 GPIO.output(out2,GPIO.LOW)
                 GPIO.output(out3,GPIO.LOW)
                 GPIO.output(out4,GPIO.LOW)
-                time.sleep(0.03)
+                await StepperDevice.sleep(sleep_time)
             elif i==1:
                 GPIO.output(out1,GPIO.HIGH)
                 GPIO.output(out2,GPIO.HIGH)
                 GPIO.output(out3,GPIO.LOW)
                 GPIO.output(out4,GPIO.LOW)
-                time.sleep(0.03)
+                await StepperDevice.sleep(sleep_time)
             elif i==2:
                 GPIO.output(out1,GPIO.LOW)
                 GPIO.output(out2,GPIO.HIGH)
                 GPIO.output(out3,GPIO.LOW)
                 GPIO.output(out4,GPIO.LOW)
-                time.sleep(0.03)
+                await StepperDevice.sleep(sleep_time)
             elif i==3:
                 GPIO.output(out1,GPIO.LOW)
                 GPIO.output(out2,GPIO.HIGH)
                 GPIO.output(out3,GPIO.HIGH)
                 GPIO.output(out4,GPIO.LOW)
-                time.sleep(0.03)
+                await StepperDevice.sleep(sleep_time)
             elif i==4:
                 GPIO.output(out1,GPIO.LOW)
                 GPIO.output(out2,GPIO.LOW)
                 GPIO.output(out3,GPIO.HIGH)
                 GPIO.output(out4,GPIO.LOW)
-                time.sleep(0.03)
+                await StepperDevice.sleep(sleep_time)
             elif i==5:
                 GPIO.output(out1,GPIO.LOW)
                 GPIO.output(out2,GPIO.LOW)
                 GPIO.output(out3,GPIO.HIGH)
                 GPIO.output(out4,GPIO.HIGH)
-                time.sleep(0.03)
+                await StepperDevice.sleep(sleep_time)
             elif i==6:
                 GPIO.output(out1,GPIO.LOW)
                 GPIO.output(out2,GPIO.LOW)
                 GPIO.output(out3,GPIO.LOW)
                 GPIO.output(out4,GPIO.HIGH)
-                time.sleep(0.03)
+                await StepperDevice.sleep(sleep_time)
             elif i==7:
                 GPIO.output(out1,GPIO.HIGH)
                 GPIO.output(out2,GPIO.LOW)
                 GPIO.output(out3,GPIO.LOW)
                 GPIO.output(out4,GPIO.HIGH)
-                time.sleep(0.03)
+                await StepperDevice.sleep(sleep_time)
             if i==0:
                 i = 7
                 continue
