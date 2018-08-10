@@ -4,7 +4,7 @@ log = config.getLogger()
 
 #CONSTANTS
 DRILL_RAISE_DUTY_CYCLE = 1e5    # at 12 volts
-DRILL_LOWER_DUTY_CYCLE = 1e5    # at 12 volts
+DRILL_LOWER_DUTY_CYCLE = 5e4    # at 12 volts
 ROTATION_SPEED = 4e3                # at 12 volts
 DEADZONE = 0.2 #joysticks arent perfect
 TRIG_DEADZONE = 0.05
@@ -15,6 +15,10 @@ DrillDevice = Device('DrillDevice', 'rover', network=config.network)
 DrillDevice.storage.top_motor_movement = 'stopped'
 DrillDevice.storage.bottom_motor_movement = 'stopped'
 DrillDevice.storage.rotation_direction = 'stopped'
+DrillDevice.storage.top_lower_switch = 0
+DrillDevice.storage.top_raise_switch = 0
+DrillDevice.storage.bottom_raise_switch = 0
+DrillDevice.storage.bottom_lower_switch = 0
 
 @DrillDevice.on('*/controller{}/joystick1'.format(controller_num))
 async def set_top_movement(joystick1, data):
@@ -48,13 +52,13 @@ async def set_bottom_movement(joystick2, data):
     if axis is None:
         return
     else:
-        duty_cycle = axis * DRILL_RAISE_DUTY_CYCLE
+        duty_cycle = axis * DRILL_LOWER_DUTY_CYCLE
 
     if -DEADZONE < axis < DEADZONE:
         DrillDevice.storage.bottom_motor_movement = 'stopped'
         await DrillDevice.publish('DrillSpin', {'SetDutyCycle': int(0)})
     else:
-        #limit switch check
+        # limit switch check
         if (DrillDevice.storage.bottom_raise_switch == 1 and duty_cycle > 0) or \
                 (DrillDevice.storage.bottom_lower_switch == 1 and duty_cycle < 0):
             DrillDevice.storage.top_motor_movement = 'stopped'
@@ -97,6 +101,16 @@ async def hard_stop():
     log.debug('setting top movement to {}'.format(DrillDevice.storage.top_motor_movement))
     log.debug('setting bottom movement to {}'.format(DrillDevice.storage.bottom_motor_movement))
     log.debug('Setting rotation movement to {}'.format(DrillDevice.storage.rotation_direction))
+
+@DrillDevice.on('*/science_limit_switches')
+async def switches(event, data):
+    # log.debug('Updating limit switches {}'.format(data))
+    DrillDevice.storage.top_raise_switch = data[1]
+    DrillDevice.storage.top_lower_switch = data[4]
+    DrillDevice.storage.bottom_raise_switch = data[0]
+    DrillDevice.storage.bottom_lower_switch = data[3]
+    DrillDevice.storage.sample_switch = data[2]
+    DrillDevice.storage.empty_switch = data[5]
 
 DrillDevice.start()
 DrillDevice.wait()

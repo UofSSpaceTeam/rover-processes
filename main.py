@@ -12,7 +12,7 @@ process_list = [
     # RunOnce('Joystick', 'python3 JoystickProcess.py'),
     # RunOnce('KalmanFilter', 'python3 KalmanFilterProcess.py'),
     # RunOnce('Autopilot', 'python3 Autopilot.py'),
-    # RunOnce('WebUI', 'python3 server.py', cwd='rover-webui'),
+    RunOnce('WebUI', 'python3 server.py', cwd='rover-webui'),
     # RunOnce('Navigation', 'python3 NavigationProcess.py'),
     # RunOnce('Simulator', 'python3 Simulator.py'),
     #RunOnce('PiCam', 'bash pi_cam.sh front'),
@@ -22,6 +22,7 @@ process_list = [
     RunOnce('LoadCell', 'python3 LoadCell.py')
     RunOnce('ScienceDrill', 'python3 DrillProcess.py'),
     RunOnce('FrontEndLoader', 'python3 FrontEndLoaderProcess.py')
+    RunOnce('ScienceControll', 'python3 NewScience.py'),
 ]
 
 
