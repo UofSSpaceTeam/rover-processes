@@ -27,18 +27,24 @@ CONTROLLER_NUMBER = config.arm_controller
 base_max_speed = 1
 base_min_speed = 0.2
 shoulder_max_speed = 1
-shoulder_min_speed = 0.1
-elbow_max_speed = 2
-elbow_min_speed = 0.1
-forearm_roll_speed = 2
-wrist_pitch_speed = 2
+shoulder_min_speed = 0.2
+elbow_max_speed = 1
+elbow_min_speed = 0.05
+forearm_roll_speed = 1
+wrist_pitch_speed = 1
 gripper_rotation_speed = 1
 gripper_open_speed = 1
 
-radius_max_speed = 2
+radius_max_speed = 1
 radius_min_speed = 0.2
-height_max_speed = 2
+height_max_speed = 1
 height_min_speed = 0.2
+
+base_erpm = 5000
+shoulder_erpm = 5000
+elbow_erpm = (shoulder_erpm/4/2400)* (12*176.4)
+manual_elbow_erpm = 2000
+wrist_pitch_erpm = 2000
 
 dt = 0.1
 
@@ -67,15 +73,15 @@ def setup(arm_storage):
     arm_storage.speeds = Joints(0,0,0,0,0,0,0)
     arm_storage.command = [0,0,0,0,0,0,0]
     arm_storage.section_lengths = Sections( #TODO: update lengths
-            upper_arm = 0.35,
-            forearm = 0.42,
+            upper_arm = 0.411,
+            forearm = 0.444,
             end_effector = 0.1)
     arm_storage.joint_limits = Joints(
             base = None,
-            # shoulder = Limits(-0.09, 0.721),
-            # elbow = Limits(1.392,1.699),
-            shoulder = None,
-            elbow = None,
+            shoulder = Limits(-0.155, 0.387),
+            elbow = Limits(0.644,2.108),
+            # shoulder = None,
+            # elbow = None,
             forearm_roll = None,
             wrist_pitch = None,
             wrist_roll = None,
@@ -97,8 +103,8 @@ def setup(arm_storage):
     arm_storage.devices = {}
     #joint_offesets are values in degrees to 'zero' the encoder angle
     arm_storage.joint_offsets = {
-        'armShoulder':-332.544,
-        'armElbow':-221.505+90,
+        'armShoulder':-324.29444,
+        'armElbow':-283.0957+90,
         'armForearmRot':0,
         'armWristPitch':0,
     }
@@ -124,43 +130,47 @@ async def get_positions():
     ''' Returns an updated Joints object with the current arm positions'''
     new_joints = list(ArmDevice.storage.joints_pos)
     for i, device in enumerate(["armShoulder", "armElbow", "armWristPitch"]):
-        if device in ArmDevice.storage.devices:
-            resp = await ArmDevice.request('USBManager', device, {'GetRotorPosition':0})
-            reading = get_pos_field(resp)
-            if reading is not None:
-                # if device == "d_armShoulder" and reading < 180:
-                #     # The shoulder joint's magnet happens to be orientated
-                #     # that the encoder flips from 360 to 0 partway through
-                #     # the rotation.
-                #     reading += 360
-                reading += ArmDevice.storage.joint_offsets[device]
-                log.debug(device)
-                new_joints[i+1] = round(math.radians(reading), 3) #Convert to radians
-            else:
-                log.warning("Could not read joint position {}".format(device))
+        resp = await ArmDevice.request('USBManager', device, {'GetRotorPosition':0})
+        # log.debug(resp)
+        if resp == 'no such endpoint':
+            continue
+        reading = get_pos_field(resp)
+        if reading is not None:
+            # if device == "d_armShoulder" and reading < 180:
+            #     # The shoulder joint's magnet happens to be orientated
+            #     # that the encoder flips from 360 to 0 partway through
+            #     # the rotation.
+            #     reading += 360
+            reading += ArmDevice.storage.joint_offsets[device]
+            new_joints[i+1] = round(math.radians(reading), 3) #Convert to radians
+        else:
+            log.warning("Could not read joint position {}".format(device))
     return Joints(*new_joints)
 
 @ArmDevice.every(dt)
 async def loop():
-    # await ArmDevice.storage.joints_pos = get_positions()
-    ArmDevice.storage.joints_pos = simulate_positions()
+    # ArmDevice.storage.joints_pos = await get_positions()
+    # ArmDevice.storage.joints_pos = simulate_positions()
     log.debug("command: {}".format(ArmDevice.storage.command))
     ArmDevice.storage.controller.user_command(ArmDevice.storage.mode, *ArmDevice.storage.command) #Keep an eye on that pointer.
     ArmDevice.storage.speeds = ArmDevice.storage.controller.update_duties(ArmDevice.storage.joints_pos)
 
     #publish speeds/duty cycles here
     log.debug("joints_pos: {}".format(ArmDevice.storage.joints_pos))
-    # log.debug("speeds: {}".format(ArmDevice.storage.speeds))
+    log.debug("speeds: {}".format(ArmDevice.storage.speeds))
 
     await send_duties()
 
 async def send_duties():
     ''' Tell each motor controller to turn on motors'''
-    await ArmDevice.publish('armBase', {'SetRPM':int(3000*ArmDevice.storage.speeds[0])})
-    await ArmDevice.publish('armShoulder', {'SetRPM':int(3000*ArmDevice.storage.speeds[1])})
-    await ArmDevice.publish('armElbow', {'SetRPM':int(ArmDevice.storage.speeds[2])})
-    await ArmDevice.publish('armForearmRot', {'SetRPM':int(ArmDevice.storage.speeds[3])})
-    await ArmDevice.publish('armWristPitch', {'SetRPM':int(ArmDevice.storage.speeds[4])})
+    await ArmDevice.publish('armBase', {'SetRPM':int(base_erpm*ArmDevice.storage.speeds[0])})
+    await ArmDevice.publish('armShoulder', {'SetRPM':int(shoulder_erpm*ArmDevice.storage.speeds[1])})
+    if isinstance(ArmDevice.storage.mode, ManualControl):
+        await ArmDevice.publish('armElbow', {'SetRPM':int(manual_elbow_erpm*ArmDevice.storage.speeds[2])})
+    else:
+        await ArmDevice.publish('armElbow', {'SetRPM':int(elbow_erpm*ArmDevice.storage.speeds[2])})
+    await ArmDevice.publish('armForearmRot', {'SetRPM':int(3000*ArmDevice.storage.speeds[3])})
+    await ArmDevice.publish('armWristPitch', {'SetRPM':int(wrist_pitch_erpm*ArmDevice.storage.speeds[4])})
     await ArmDevice.publish('armWristRot', {'SetDutyCycle':int(1e5*ArmDevice.storage.speeds[5])})
     await ArmDevice.publish('armGripperOpen', {'SetDutyCycle':int(1e5*ArmDevice.storage.speeds[6])})
 
@@ -170,7 +180,7 @@ async def on_joystick1(event, data):
     #print("joystick1:{}".format(data), "DEBUG")
     y_axis = data[1]
     if isinstance(ArmDevice.storage.mode, ManualControl):
-        y_axis *= -1*shoulder_max_speed
+        y_axis *= shoulder_max_speed
         if y_axis > shoulder_min_speed or y_axis < -shoulder_min_speed:
             armShoulderSpeed = y_axis
         else:
@@ -189,14 +199,14 @@ async def on_joystick2(event, data):
     ''' Elbow joints and z/height control'''
     y_axis = data[1]
     if isinstance(ArmDevice.storage.mode, ManualControl):
-        y_axis *= elbow_max_speed
+        y_axis *= -1*elbow_max_speed
         if y_axis > elbow_min_speed or y_axis < -elbow_min_speed:
             armY_ElbowSpeed = y_axis
         else:
             armY_ElbowSpeed = 0
         ArmDevice.storage.command[2] = armY_ElbowSpeed
     elif isinstance(ArmDevice.storage.mode, PlanarControl):
-        y_axis = (y_axis * height_max_speed)
+        y_axis = -1*(y_axis * height_max_speed)
         if y_axis > height_min_speed or y_axis < -height_min_speed:
             height_speed = y_axis
         else:

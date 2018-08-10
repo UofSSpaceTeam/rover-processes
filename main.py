@@ -16,7 +16,7 @@ process_list = [
     # RunOnce('Navigation', 'python3 NavigationProcess.py'),
     # RunOnce('Simulator', 'python3 Simulator.py'),
     #RunOnce('PiCam', 'bash pi_cam.sh front'),
-    #RunOnce('ArmProcess', 'python3 ArmProcess.py'),
+    RunOnce('ArmProcess', 'python3 ArmProcess.py'),
     #RunOnce('webcam', 'bash start_webcam.sh'),
     # RunOnce('ObstacleDetection', 'python3 Avoidance.py'),
     RunOnce('LoadCell', 'python3 LoadCell.py')

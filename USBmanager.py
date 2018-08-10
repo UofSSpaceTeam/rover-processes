@@ -75,7 +75,7 @@ def init_vesc_driver(port, ser, l):
         log.debug('Creating VESC driver')
         ser.close()
         driver = VESCDriver(port.device)
-        if msg.subscription not in ['armWrist']: # hacks for position request
+        if msg.subscription not in ['armShoulder', 'armElbow', 'armWristPitch']: # hacks for position request
             driver.start_reader(handle_vesc_message)
         sub = msg.subscription
         manager.storage.drivers[sub] = driver
