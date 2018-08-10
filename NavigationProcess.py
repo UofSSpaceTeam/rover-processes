@@ -43,9 +43,11 @@ def udpate_position(event, data):
 @NavDevice.on('*/YagiPower')
 async def update_rdf_power(event, data):
     heading = NavDevice.storage.rover.heading
-    angle = math.floor(heading/10)
-    NavDevice.storage.yagipower[angle] = data
-    await NavDevice.publish('RDF_readings')
+    angle = int(math.floor(heading/10))
+    previous_val = NavDevice.storage.yagipower[angle]
+    if previous_val is None or previous_val <= data:
+        NavDevice.storage.yagipower[angle] = data
+    await NavDevice.publish('RDF_readings', NavDevice.storage.yagipower)
 
 @NavDevice.on('*/roverHeading')
 def update_heading(event, data):
@@ -106,15 +108,13 @@ def cacluate_distance(start, dest):
     p1 = GPSPosition(*dest)
     return p0.distance(p1)
 
-<<<<<<< HEAD
 @NavDevice.on_request('DirectionToTurn')
 def return_turn_dir():
     return NavDevice.storage.turn_direction
-=======
+
 @NavDevice.on_request('BallPosition')
 def return_ball_pos():
     return NavDevice.storage.ball
->>>>>>> drive-to-ball
 
 
 NavDevice.start()

@@ -5,8 +5,8 @@ import config
 network=config.network
 
 process_list = [
-    RunOnce('USBManager', 'python3 USBmanager.py'),
-    RunOnce('Printer', 'python3 Printer.py'),
+    # RunOnce('USBManager', 'python3 USBmanager.py'),
+    # RunOnce('Printer', 'python3 Printer.py'),
     # RunOnce('GPSDriver', 'python3 GPSdriver.py'),
     # RunOnce('DriveControl', 'python3 DriveProcess.py'),
     RunOnce('Joystick', 'python3 JoystickProcess.py'),
@@ -20,9 +20,9 @@ process_list = [
     #RunOnce('webcam', 'bash start_webcam.sh'),
     # RunOnce('ObstacleDetection', 'python3 Avoidance.py'),
     # RunOnce('LoadCell', 'python3 LoadCell.py')
-    RunOnce('ScienceDrill', 'python3 DrillProcess.py'),
+    # RunOnce('ScienceDrill', 'python3 DrillProcess.py'),
     # RunOnce('FrontEndLoader', 'python3 FrontEndLoaderProcess.py')
-    RunOnce('ScienceControll', 'python3 NewScience.py'),
+    # RunOnce('ScienceControll', 'python3 NewScience.py'),
 ]
 
 
