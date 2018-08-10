@@ -4,7 +4,7 @@ W=1440
 B=2500000
 EXP=auto
 MM=average
-HOST=10.0.0.4
+HOST=10.0.0.10
 
 if [ $# -lt 1 ]; then
     echo "Usage: pi_cam.sh {front|back} [host]"

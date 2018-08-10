@@ -6,7 +6,8 @@ Equipment Servicing Diagnostic client
 import argparse
 import socket
 
-HOST = 'task.cstag.ca'
+# HOST = 'task.cstag.ca'
+HOST = '192.168.0.1'
 PORT = 4547
 BUFF_SIZE = 2048
 
