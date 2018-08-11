@@ -30,12 +30,7 @@ async def stage_two(event, data):
         await ScienceDevice.sleep(0.1)
     await ScienceDevice.sleep(0.1)
     await ScienceDevice.publish('ScienceArduino', {'run_emitter': 0})
-    await ScienceDevice.publish('Spectrometer_samples', ScienceDevice.storage.samples)
     await ScienceDevice.publish('ScienceArduino', {'move_carousel': -207-10})
-
-@ScienceDevice.on('*/spectrometer_data')
-def save_sample(event, data):
-    ScienceDevice.storage.samples.append(data)
 
 # @ScienceDevice.every('100ms')
 # async def poll_detector():

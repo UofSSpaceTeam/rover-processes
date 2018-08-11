@@ -8,8 +8,8 @@ network = '10.0.0.0/24'
 # network = '0.0.0.0/0'
 
 drive_controller = 0
-arm_controller = 1
-drill_controller = 0
+arm_controller = 0
+drill_controller = 1
 front_end_loader_controller = 1
 
 default_level = logging.DEBUG
