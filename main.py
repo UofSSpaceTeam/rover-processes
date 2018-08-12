@@ -10,11 +10,11 @@ process_list = [
     # RunOnce('GPSDriver', 'python3 GPSdriver.py'),
     # RunOnce('DriveControl', 'python3 DriveProcess.py'),
     # RunOnce('Joystick', 'python3 JoystickProcess.py'),
-    # RunOnce('KalmanFilter', 'python3 KalmanFilterProcess.py'),
+    RunOnce('KalmanFilter', 'python3 KalmanFilterProcess.py'),
     # RunOnce('Autopilot', 'python3 Autopilot.py'),
     RunOnce('WebUI', 'python3 server.py', cwd='rover-webui'),
-    # RunOnce('Navigation', 'python3 NavigationProcess.py'),
-    # RunOnce('Simulator', 'python3 Simulator.py'),
+    RunOnce('Navigation', 'python3 NavigationProcess.py'),
+    RunOnce('Simulator', 'python3 Simulator.py'),
     #RunOnce('PiCam', 'bash pi_cam.sh front'),
     # RunOnce('ArmProcess', 'python3 ArmProcess.py'),
     #RunOnce('webcam', 'bash start_webcam.sh'),
@@ -22,7 +22,7 @@ process_list = [
     # RunOnce('LoadCell', 'python3 LoadCell.py')
     # RunOnce('ScienceDrill', 'python3 DrillProcess.py'),
     # RunOnce('FrontEndLoader', 'python3 FrontEndLoaderProcess.py')
-    RunOnce('ScienceControll', 'python3 NewScience.py'),
+    #RunOnce('ScienceControll', 'python3 NewScience.py'),
 ]
 
 

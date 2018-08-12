@@ -7,3 +7,4 @@ matplotlib
 pygame
 aiohttp
 libraries/Phidget22Python
+RPi.GPIO

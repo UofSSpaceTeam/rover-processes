@@ -78,10 +78,10 @@ def setup(arm_storage):
             end_effector = 0.1)
     arm_storage.joint_limits = Joints(
             base = None,
-            shoulder = Limits(-0.155, 0.387),
-            elbow = Limits(0.644,2.108),
-            # shoulder = None,
-            # elbow = None,
+            # shoulder = Limits(-0.155, 0.387),
+            # elbow = Limits(0.644,2.108),
+            shoulder = None,
+            elbow = None,
             forearm_roll = None,
             wrist_pitch = None,
             wrist_roll = None,

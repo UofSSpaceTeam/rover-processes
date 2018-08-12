@@ -11,7 +11,7 @@ import config
 class Rover:
 
     def __init__(self):
-        self.position = GPSPosition(52.132653, -106.628012)
+        self.position = GPSPosition(51.470889, -112.733622)
         self.prev_pos = self.position
         self.heading = 0 # degress, north = 0
         self.wheelspeed = [0, 0]
@@ -66,7 +66,7 @@ log = config.getLogger()
 # Rover parameters
 simDevice.storage.rover = Rover()
 simDevice.storage.rover.wheelspeed = [0, 0]
-simDevice.storage.rover.heading = 0
+simDevice.storage.rover.heading = 15.4
 
 DELTA_T = 0.1
 @simDevice.every(DELTA_T)
@@ -84,8 +84,8 @@ async def publish_state():
     pos_list = [position.lat, position.lon]
     noisy_pos = simulate_piksi(position)
     # print(noisy_pos)
-    await simDevice.publish("GPSPosition", pos_list)
-    # await simDevice.publish("singlePointGPS", noisy_pos)
+    # await simDevice.publish("GPSPosition", pos_list)
+    await simDevice.publish("singlePointGPS", noisy_pos)
     accel = simDevice.storage.rover.acceleration
     accel = simulate_bno(accel)
     # print(accel)
