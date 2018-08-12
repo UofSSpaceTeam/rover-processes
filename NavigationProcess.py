@@ -49,6 +49,10 @@ async def update_rdf_power(event, data):
         NavDevice.storage.yagipower[angle] = data
     await NavDevice.publish('RDF_readings', NavDevice.storage.yagipower)
 
+@NavDevice.on('*/clearRadar')
+async def clear_radar(event, data):
+    NavDevice.storage.yagipower = [None]*36
+
 @NavDevice.on('*/roverHeading')
 def update_heading(event, data):
     NavDevice.storage.rover.heading = data
