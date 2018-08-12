@@ -137,8 +137,9 @@ def update(num_dimensions, x_cp, P_cp, z, H, R):
 @KalmanFilter.task
 def start_up_kalman_filter():
     #User defined variables
-    #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    dt = 0.1  # time step (can be determined by rate that GPS readings come in)
+    #---------------------------------------------------------------------------------------------------------------------
+    KalmanFilter.storage.last_time = 0
+    KalmanFilter.storage.current_time = 0
     num_dimensions = 2  # number of dimensions in model
     ax = 0
     ay = 0
@@ -147,9 +148,6 @@ def start_up_kalman_filter():
     [x_meas, y_meas, zone_number, zone_letter] = utm.from_latlon(intial[0], initial[1])
     initial_cart = [x_meas, y_meas]
     KalmanFilter.storage.initial_cart = initial_cart
-    KalmanFilter.storage.dt = dt
-    KalmanFilter.storage.F = create_state_transition_model(dt, num_dimensions)
-    KalmanFilter.storage.B = create_control_input_model(dt, num_dimensions)
     KalmanFilter.storage.H = create_observation_model(num_dimensions)
     KalmanFilter.storage.x_pp = create_initial_state_vector(num_dimensions, initial_cart)
     KalmanFilter.storage.P_pp = create_initial_process_error_covariance_matrix(num_dimensions)
@@ -160,49 +158,42 @@ def start_up_kalman_filter():
 
 @KalmanFilter.on('*/Acceleration')
 async def update_accel(event, data):
-    # print(data)
     KalmanFilter.storage.u = data
 
 
 @KalmanFilter.on('*/singlePointGPS')
 async def kalman_filter(event, data):
-    num_dimensions = 2
-    F = KalmanFilter.storage.F
-    B = KalmanFilter.storage.B
-    H = KalmanFilter.storage.H
-    x_pp = KalmanFilter.storage.x_pp
-    P_pp = KalmanFilter.storage.P_pp
-    Q = KalmanFilter.storage.Q
-    R = KalmanFilter.storage.R
-    v = KalmanFilter.storage.v
-    u = KalmanFilter.storage.u
-    initial_cart = KalmanFilter.storage.initial_cart
+    if KalmanFilter.storage.last_time == 0:
+        KalmanFilter.storage.last_time = time.time()
+    else:
+        KalmanFilter.storage.current_time = time.time()
+        dt = KalmanFilter.storage.current_time - KalmanFilter.storage.last_time
+        KalmanFilter.storage.last_time = KalmanFilter.storage.current_time
+        num_dimensions = 2
+        F = create_state_transition_model(dt, num_dimensions)
+        B = create_control_input_model(dt, num_dimensions)
+        H = KalmanFilter.storage.H
+        x_pp = KalmanFilter.storage.x_pp
+        P_pp = KalmanFilter.storage.P_pp
+        Q = KalmanFilter.storage.Q
+        R = KalmanFilter.storage.R
+        v = KalmanFilter.storage.v
+        u = KalmanFilter.storage.u
+        initial_cart = KalmanFilter.storage.initial_cart
+        gps_latitude = data[0]  # Is this causing issues?
+        gps_longitude = data[1]
+        [x_cp, P_cp] = predict(F, x_pp, B, u, P_pp, Q)
+        [z, zone_info] = observation(gps_latitude, gps_longitude, H, v)  # This is where gps values are inputted
+        [x_cc, P_cc] = update(num_dimensions, x_cp, P_cp, z, H, R)
+        true_gps = utm.to_latlon(x_cc[0, 0], x_cc[1, 0], zone_info[0], zone_info[1], strict=False)  # this has the value we
+        cart_pos_final = [x_cc[0,0], x_cc[1,0]]
 
-    #u = create_control_inputs_vector(ax, ay) #is where the accelerometer values go
-    gps_latitude = data[0]  # Is this causing issues?
-    gps_longitude = data[1]
-    [x_cp, P_cp] = predict(F, x_pp, B, u, P_pp, Q)
-    [z, zone_info] = observation(gps_latitude, gps_longitude, H, v)  # This is where gps values are inputted
-    [x_cc, P_cc] = update(num_dimensions, x_cp, P_cp, z, H, R)
-    true_gps = utm.to_latlon(x_cc[0, 0], x_cc[1, 0], zone_info[0], zone_info[1], strict=False)  # this has the value we
-    cart_pos_final = [x_cc[0,0], x_cc[1,0]]
+        log.debug('raw: {}'.format(data))
+        log.debug("filtered: {}".format(true_gps))
 
-    log.debug('raw: {}'.format(data))
-    log.debug("filtered: {}".format(true_gps))
-
-    ''' pres = 0.00001
-    dif_lat = abs(true_gps[0] - 52.132653)
-    dif_long = abs(true_gps[1] + 106.628012)
-    if dif_lat < pres:
-        print('Accurate Lat : ', dif_lat)
-    if dif_long < pres:
-        print('Accurate Long : ', dif_long)'''
-
-
-
-    await KalmanFilter.publish('FilteredGPS', true_gps)
-    KalmanFilter.storage.x_pp = x_cc
-    KalmanFilter.storage.P_pp = P_cc
+        await KalmanFilter.publish('FilteredGPS', true_gps)
+        KalmanFilter.storage.x_pp = x_cc
+        KalmanFilter.storage.P_pp = P_cc
 
 
 try:
