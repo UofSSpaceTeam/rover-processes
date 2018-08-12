@@ -48,6 +48,9 @@ def print_data(data,obj):
             td = (time.time() - rising_time)/1000
 
             # send time diff back to server here
+            @RDFDevice.task
+            async def send_difference():
+                await RDFDevice.publish('TimeDifference', td)
 
         log.debug(value)
         @RDFDevice.task
