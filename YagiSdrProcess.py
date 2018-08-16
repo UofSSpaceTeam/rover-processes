@@ -21,7 +21,7 @@ sdr.center_freq = 433.5e6
 sdr.set_bandwidth(500e3)
 
 p_max_avg = []
-prev_value = None
+prev_value = 0
 rising_time = 0
 falling_time = 0
 
