@@ -2,8 +2,9 @@ from robocluster.manager import ProcessManager, RunOnce
 import time
 import config
 
-network=config.network
+network = config.network
 
+# Comment out entries in process_list to disable processes.
 process_list = [
     # RunOnce('USBManager', 'python3 USBmanager.py'),
     # RunOnce('Printer', 'python3 Printer.py'),
@@ -15,14 +16,14 @@ process_list = [
     RunOnce('WebUI', 'python3 server.py', cwd='rover-webui'),
     # RunOnce('Navigation', 'python3 NavigationProcess.py'),
     # RunOnce('Simulator', 'python3 Simulator.py'),
-    #RunOnce('PiCam', 'bash pi_cam.sh front'),
+    # RunOnce('PiCam', 'bash pi_cam.sh front'),
     # RunOnce('ArmProcess', 'python3 ArmProcess.py'),
-    #RunOnce('webcam', 'bash start_webcam.sh'),
+    # RunOnce('webcam', 'bash start_webcam.sh'),
     # RunOnce('ObstacleDetection', 'python3 Avoidance.py'),
     # RunOnce('LoadCell', 'python3 LoadCell.py')
     # RunOnce('ScienceDrill', 'python3 DrillProcess.py'),
     # RunOnce('FrontEndLoader', 'python3 FrontEndLoaderProcess.py')
-    #RunOnce('ScienceControll', 'python3 NewScience.py'),
+    # RunOnce('ScienceControll', 'python3 NewScience.py'),
 ]
 
 
