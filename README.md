@@ -23,6 +23,10 @@ installed. Instructions for that are on it's Github page. It is recomended that 
 the source and install it with the `-e` flag, as it makes updating robocluster as easy
 as just pulling from the robocluster repo.
 
+If you write a new process that needs a new python library, please add it to the
+`requirements.txt` so that the above install command actually installs everything
+that is needed.
+
 
 ## Running the software
 To run the rover software, run the `main.py` script:
@@ -50,3 +54,5 @@ if you change the behaviour or add new settings.
 Most important setting is `network`. If none of the processes seem to be talking
 to each other, it is likely because `network` is not set properly.
 
+Logs are written to a folder called `logs`, and are saved with the date and time
+the software was started as the filename. They are ignored by git.
