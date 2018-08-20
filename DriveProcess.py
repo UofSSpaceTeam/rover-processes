@@ -1,3 +1,16 @@
+"""
+DriveProcess
+============
+Handles anything to do with driving the rover. Provides manual control,
+and a remote API for other processes such as Autopilot to move the rover.
+The DriveProcess uses events from an xbox controller for manual control.
+Currently manual control is set up like a skid steer where two joysticks
+control each side of the wheels. We primary send commands to the motor controllers
+to control the RPM of the wheels, but a mode for setting the current is
+also available. The current control mode has not been used much, so make
+sure you test reasonable values are being sent out before you hook up the
+motors to the controllers.
+"""
 from pyvesc import SetRPM, SetCurrent, SetCurrentBrake
 import pyvesc
 from math import expm1 # e**x - 1  for rpm/current curves
@@ -15,7 +28,6 @@ CONTROLLER_NUM = config.drive_controller
 # Limits for Electronic RPM.
 # Note this is not the RPM of the wheel, but the
 # speed at which the motor is commutated.
-DEADZONE = 0.1
 MAX_RPM = 40000
 MIN_RPM = 300
 MAX_RPM_CHANGE = MAX_RPM/2
@@ -25,6 +37,9 @@ MIN_CURRENT = 0.1
 CURVE_VAL = 17
 MIN_DIVISOR = 1
 MAX_DIVISOR = 4
+
+# Joystick deadzone
+DEADZONE = 0.1
 
 WHEEL_RADIUS = 0.26 # meters
 ROVER_WIDTH = 1.16 # meters
@@ -123,6 +138,9 @@ async def trigger_callback(Ltrigger, trigger):
 
 @DriveDevice.on('*/controller{}/bumperR_down'.format(CONTROLLER_NUM))
 def up_shift(event, data):
+    """
+    Increase the max speed of the drive system.
+    """
     d = DriveDevice.storage.divisor/2
     d = max(MIN_DIVISOR, d)
     DriveDevice.storage.divisor = d
@@ -130,6 +148,9 @@ def up_shift(event, data):
 
 @DriveDevice.on('*/controller{}/bumperL_down'.format(CONTROLLER_NUM))
 def down_shift(event, data):
+    """
+    Decrease the max speed of the drive system.
+    """
     d = DriveDevice.storage.divisor*2
     d = min(MAX_DIVISOR, d)
     DriveDevice.storage.divisor = d
@@ -138,8 +159,14 @@ def down_shift(event, data):
 #### Drive API #####
 
 async def setLeftWheelSpeed(rpm):
+    """
+    Set the speed of the left wheels.
+    Args:
+        rpm (int): The ERPM to send to the wheels.
+    """
     left_rpm = DriveDevice.storage.left_rpm
     rpm = rpm*RPM_TO_ERPM
+    # limit the accelration for smoother movement.
     d_rpm = min(abs(rpm-left_rpm), max(abs(left_rpm)/Autonav_MAX_RPM, MIN_RPM/Autonav_MAX_RPM)*MAX_RPM_CHANGE)
     if rpm > 0:
         if rpm > left_rpm: # speeding up
@@ -161,8 +188,14 @@ async def setLeftWheelSpeed(rpm):
         await DriveDevice.publish("wheelLB", {'SetRPM':DirectionConstants['wheelLB']*int(rpm)})
 
 async def setRightWheelSpeed(rpm):
+    """
+    Set the speed of the right wheels.
+    Args:
+        rpm (int): The ERPM to send to the wheels.
+    """
     right_rpm = DriveDevice.storage.right_rpm
     rpm = rpm*RPM_TO_ERPM
+    # limit the accelration for smoother movement.
     d_rpm = min(abs(rpm-right_rpm), max(abs(right_rpm)/Autonav_MAX_RPM, MIN_RPM/Autonav_MAX_RPM)*MAX_RPM_CHANGE)
     if rpm > 0:
         if rpm > right_rpm:
@@ -185,15 +218,28 @@ async def setRightWheelSpeed(rpm):
 
 @DriveDevice.on('*/Autopilot')
 def enable_api(event, data):
+    """
+    Enable or disable the drive API.
+    Args:
+        data (boolean): Set the state of the drive API.
+    """
     DriveDevice.storage.api_enabled = data
 
 @DriveDevice.on('Stop')
 async def DriveStop_callback(event, data):
+    """
+    Stop the rover by setting the wheel speed to 0.
+    """
     await setLeftWheelSpeed(0)
     await setRightWheelSpeed(0)
 
 @DriveDevice.on('DriveForward')
 async def DriveForward_callback(DriveForward, speed):
+    """
+    Drive the rover forward at a given speed.
+    Args:
+        speed (float): Speed in m/s to drive at.
+    """
     rpm = speed*60/WHEEL_RADIUS
     if DriveDevice.storage.left_rpm != DriveDevice.storage.right_rpm:
         rpm = 0
@@ -202,30 +248,53 @@ async def DriveForward_callback(DriveForward, speed):
 
 @DriveDevice.on('DriveBackward')
 async def DriveBackward_callback(DriveBackward, speed):
+    """
+    Drive the rover backwards at a given speed.
+    Args:
+        speed (float): Speed in m/s to drive at.
+    """
     rpm = -speed*60/WHEEL_RADIUS
     await setLeftWheelSpeed(rpm)
     await setRightWheelSpeed(rpm)
 
 @DriveDevice.on('RotateRight')
 async def DriveRotateRight_callback(DriveRotateRight, speed):
+    """
+    While stationary, rotate on the spot to the right.
+    Args:
+        speed (float): Speed to rotate at in m/s... Should probably
+                       update this to be a more sensible unit.
+    """
     rpm = speed*60/WHEEL_RADIUS
     await setLeftWheelSpeed(rpm)
     await setRightWheelSpeed(-rpm)
 
 @DriveDevice.on('RotateLeft')
 async def DriveRotateLeft_callback(DriveRotateLeft, speed):
+    """
+    While stationary, rotate on the spot to the left.
+    Args:
+        speed (float): Speed to rotate at in m/s... Should probably
+                       update this to be a more sensible unit.
+    """
     rpm = speed*60/WHEEL_RADIUS
     await setLeftWheelSpeed(-rpm)
     await setRightWheelSpeed(rpm)
 
 @DriveDevice.on('TurnRight')
 async def DriveTurnRight_callback(DriveTurnRight, speed):
+    """
+    Turn right while still driving forward.
+    """
     rpm = speed*60/WHEEL_RADIUS
     await setLeftWheelSpeed(rpm)
     await setRightWheelSpeed(rpm*0.5)
 
 @DriveDevice.on('TurnLeft')
 async def DriveTurnLeft_callback(DriveTurnLeft, speed):
+    """
+    Turn right while still driving forward.
+    """
     rpm = speed*60/WHEEL_RADIUS
     await setLeftWheelSpeed(rpm*0.5)
     await setRightWheelSpeed(rpm)
