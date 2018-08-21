@@ -11,6 +11,7 @@ network = '10.0.0.0/24'
 # network = '0.0.0.0/0'
 
 # Which xbox controller controlls which device.
+# 0 = First controller plugged in, 1 = second, etc.
 # Typically you want to just plug in one controller
 # to test a single module, so say you want to test the drill,
 # set `drill_controller = 0`. If two processes are running
