@@ -1,6 +1,11 @@
-#Skylar Koroluk
-#Some pieces borrowed from Irene 
-#Obstacle Avoidance Plan B for USST rover 2018
+"""
+Skylar Koroluk
+Some pieces borrowed from Irene
+Obstacle Avoidance Plan B for USST rover 2018
+
+This process needs to be run on the Nvidia Jetson
+(or other machine with the ZED sdk installed and working).
+"""
 
 import pyzed.camera as zcam
 import pyzed.defines as sl
@@ -22,14 +27,14 @@ PIXEL_THRESHOLD = 30
 
 
 
-AvoidanceDecision.storage.first = True 
+AvoidanceDecision.storage.first = True
 @AvoidanceDecision.every('0.0000001ms')
 async def main():
     #init()
     start_time = time.time()
     """Takes in a sampled frame from the ZED camera and decides whether the rover needs to adjust its course
     returns either "right", "left" or None."""
-   
+
     # Open the camera
     if AvoidanceDecision.storage.first==True:
         AvoidanceDecision.storage.zed = zcam.PyZEDCamera()
@@ -37,21 +42,21 @@ async def main():
         AvoidanceDecision.storage.init_params = zcam.PyInitParameters()
         AvoidanceDecision.storage.init_params.depth_mode = sl.PyDEPTH_MODE.PyDEPTH_MODE_QUALITY  # Use PERFORMANCE depth mode
         AvoidanceDecision.storage.init_params.coordinate_units = sl.PyUNIT.PyUNIT_MILLIMETER  # Use milliliter units (for depth measurements)
- 
+
         err = AvoidanceDecision.storage.zed.open(AvoidanceDecision.storage.init_params)
-        
-        log.debug("check time: ", time.time() - start_time) 
+
+        log.debug("check time: ", time.time() - start_time)
         failed = 0
         while err != tp.PyERROR_CODE.PySUCCESS:
             failed += 1
             log.error("\rCould not open camera", failed, "times")
             err = AvoidanceDecision.storage.zed.open(AvoidanceDecision.storage.init_params)
-        AvoidanceDecision.storage.first = False 
+        AvoidanceDecision.storage.first = False
         # Create and set PyRuntimeParameters after opening the camera
         AvoidanceDecision.storage.runtime_parameters = zcam.PyRuntimeParameters()
         AvoidanceDecision.storage.runtime_parameters.sensing_mode = sl.PySENSING_MODE.PySENSING_MODE_STANDARD  #use fill mode
- 
-    runtime_parameters = AvoidanceDecision.storage.runtime_parameters 
+
+    runtime_parameters = AvoidanceDecision.storage.runtime_parameters
     zed = AvoidanceDecision.storage.zed
     image = core.PyMat()
     depth = core.PyMat()

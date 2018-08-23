@@ -1,7 +1,11 @@
 """
+NavigationProcess
+=================
 Keeps track of the Rover's position and environment.
-Provides a way for other processes to query this information of the
-environment.
+All sensor data goes into the navigation process,
+where information can be combined to form a detailed model of the
+state of the rover and its environment, and provides a way for other
+processes to query this information.
 """
 
 import math
@@ -13,7 +17,6 @@ from libraries.GPS.GPSPosition import GPSPosition
 import config
 log = config.getLogger()
 
-
 class Rover:
 
     def __init__(self):
@@ -23,7 +26,6 @@ class Rover:
         self.pitch = 0
         self.roll = 0
 
-
 NavDevice = Device('Navigation', 'rover', network=config.network)
 
 NavDevice.storage.rover = Rover()
@@ -31,8 +33,11 @@ NavDevice.storage.rover = Rover()
 NavDevice.storage.turn_direction = None
 NavDevice.storage.waypoints = []
 NavDevice.storage.yagipower = [None]*36
-
 NavDevice.storage.ball = None
+
+###################################################
+# Subscription callbacks for updating rover model #
+###################################################
 
 @NavDevice.on('*/FilteredGPS')
 @NavDevice.on('*/GPSPosition')
@@ -85,6 +90,11 @@ def update_ball_info(event, data):
         ball_y = data['y'] - data['sensorHeight']/2
         NavDevice.storage.ball = {'x':ball_x, 'y':ball_y, 'size':data['size']}
     log.debug(NavDevice.storage.ball)
+
+
+####################
+# Request handlers #
+####################
 
 @NavDevice.on_request('RoverPosition')
 def return_position():
