@@ -23,7 +23,7 @@ process_list = [
     # RunOnce('LoadCell', 'python3 LoadCell.py')
     # RunOnce('ScienceDrill', 'python3 DrillProcess.py'),
     # RunOnce('FrontEndLoader', 'python3 FrontEndLoaderProcess.py')
-    # RunOnce('ScienceControll', 'python3 NewScience.py'),
+    # RunOnce('ScienceControll', 'python3 Science.py'),
 ]
 
 
