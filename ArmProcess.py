@@ -1,22 +1,20 @@
-# Copyright 2016 University of Saskatchewan Space Design Team Licensed under the
-# Educational Community License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may
-# obtain a copy of the License at
-#
-# https://opensource.org/licenses/ecl2.php
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS"
-# BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-# or implied. See the License for the specific language governing
-# permissions and limitations under the License.
+"""
+ArmProcess
+==========
+Controls the arm on the rover.
+Utilizes a library written by Liam Bindle to handle
+limits and inverse kinematics: https://github.com/LiamBindle/arm17
+For manual control, it works pretty similar to
+the DriveProcess.
+This process is getting to be a bit of a mess, being
+ported from our old framework, and should probably
+be rewritten from scratch along with Liam's library.
+"""
 
 from libraries.arm17.arm import Joints, Controller, Config, ManualControl,Sections,Limits,PlanarControl
 from math import pi
 import math
 
-# Any libraries you need can be imported here. You almost always need time!
-import time
 from robocluster import Device
 import config
 log = config.getLogger()
@@ -72,7 +70,7 @@ def setup(arm_storage):
     arm_storage.joints_pos = Joints(0,0,pi/4,0,0,0,0)
     arm_storage.speeds = Joints(0,0,0,0,0,0,0)
     arm_storage.command = [0,0,0,0,0,0,0]
-    arm_storage.section_lengths = Sections( #TODO: update lengths
+    arm_storage.section_lengths = Sections(
             upper_arm = 0.411,
             forearm = 0.444,
             end_effector = 0.1)
@@ -149,16 +147,19 @@ async def get_positions():
 
 @ArmDevice.every(dt)
 async def loop():
-    # ArmDevice.storage.joints_pos = await get_positions()
-    # ArmDevice.storage.joints_pos = simulate_positions()
+    """
+    The main update loop. This reads positions from the encoders,
+    and sends the current movement commands to the motors.
+    """
+    # ArmDevice.storage.joints_pos = await get_positions() # Use this if encoders are wired up.
+    # ArmDevice.storage.joints_pos = simulate_positions() # Use this for testing without position feedback.
     log.debug("command: {}".format(ArmDevice.storage.command))
-    ArmDevice.storage.controller.user_command(ArmDevice.storage.mode, *ArmDevice.storage.command) #Keep an eye on that pointer.
+    ArmDevice.storage.controller.user_command(ArmDevice.storage.mode, *ArmDevice.storage.command)
     ArmDevice.storage.speeds = ArmDevice.storage.controller.update_duties(ArmDevice.storage.joints_pos)
 
-    #publish speeds/duty cycles here
+    # publish speeds/duty cycles here
     log.debug("joints_pos: {}".format(ArmDevice.storage.joints_pos))
     log.debug("speeds: {}".format(ArmDevice.storage.speeds))
-
     await send_duties()
 
 async def send_duties():
@@ -166,6 +167,7 @@ async def send_duties():
     await ArmDevice.publish('armBase', {'SetRPM':int(base_erpm*ArmDevice.storage.speeds[0])})
     await ArmDevice.publish('armShoulder', {'SetRPM':int(shoulder_erpm*ArmDevice.storage.speeds[1])})
     if isinstance(ArmDevice.storage.mode, ManualControl):
+        # let manual conrol go a bit faster.
         await ArmDevice.publish('armElbow', {'SetRPM':int(manual_elbow_erpm*ArmDevice.storage.speeds[2])})
     else:
         await ArmDevice.publish('armElbow', {'SetRPM':int(elbow_erpm*ArmDevice.storage.speeds[2])})
@@ -177,7 +179,6 @@ async def send_duties():
 @ArmDevice.on('*/controller{}/joystick1'.format(CONTROLLER_NUMBER))
 async def on_joystick1(event, data):
     ''' Shoulder joint, and radius control.'''
-    #print("joystick1:{}".format(data), "DEBUG")
     y_axis = data[1]
     if isinstance(ArmDevice.storage.mode, ManualControl):
         y_axis *= shoulder_max_speed
@@ -215,6 +216,9 @@ async def on_joystick2(event, data):
 
 @ArmDevice.on('*/controller{}/dpad'.format(CONTROLLER_NUMBER))
 async def on_dpad(event, data):
+    """
+    Wrist rotation, and wrist pitch.
+    """
     x_axis = data[0]
     y_axis = data[1]
     ArmDevice.storage.command[4] = y_axis*wrist_pitch_speed
@@ -222,6 +226,9 @@ async def on_dpad(event, data):
 
 @ArmDevice.on('*/controller{}/trigger'.format(CONTROLLER_NUMBER))
 async def on_trigger(event, data):
+    """
+    Base rotation.
+    """
     armBaseSpeed = data*base_max_speed
     if -base_min_speed < armBaseSpeed < base_min_speed:
         armBaseSpeed = 0
@@ -232,6 +239,9 @@ async def on_trigger(event, data):
 
 @ArmDevice.on('*/controller{}/buttonB_down'.format(CONTROLLER_NUMBER))
 async def on_buttonB_down(event, data):
+    """
+    Toggles between Inverse Kinematics and manual control modes.
+    """
     if isinstance(ArmDevice.storage.mode, ManualControl):
         ArmDevice.storage.mode = PlanarControl()
         log.info("PlanarControl")
@@ -239,8 +249,15 @@ async def on_buttonB_down(event, data):
         ArmDevice.storage.mode = ManualControl()
         log.info("ManualControl")
 
+# The mappings for button A and Y are broken into button down and up
+# events because we're using two independant buttons to set the same
+# variable. If we just watched the button state, the button that is
+# released would keep setting the gripper speed at 0.
 @ArmDevice.on('*/controller{}/buttonA_down'.format(CONTROLLER_NUMBER))
 async def on_buttonA_down(event, data):
+    """
+    Open/close the end effector.
+    """
     ArmDevice.storage.command[6] = gripper_open_speed
 
 @ArmDevice.on('*/controller{}/buttonA_up'.format(CONTROLLER_NUMBER))
@@ -257,6 +274,9 @@ async def on_buttonY_down(event, data):
 
 @ArmDevice.on('*/controller{}/bumperR_down'.format(CONTROLLER_NUMBER))
 async def on_buttonA_down(event, data):
+    """
+    Rotate the forearm. Not really used at the moment.
+    """
     ArmDevice.storage.command[3] = forearm_roll_speed
 
 @ArmDevice.on('*/controller{}/bumperR_up'.format(CONTROLLER_NUMBER))

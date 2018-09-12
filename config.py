@@ -4,14 +4,26 @@ import inspect
 import time
 import os
 
+# The network for robocluster Devices to use.
+# For local testing on your laptop, 0.0.0.0/0 should work,
+# for the network on the rover, 10.0.0.0/24 is the one you need.
 network = '10.0.0.0/24'
 # network = '0.0.0.0/0'
 
+# Which xbox controller controlls which device.
+# 0 = First controller plugged in, 1 = second, etc.
+# Typically you want to just plug in one controller
+# to test a single module, so say you want to test the drill,
+# set `drill_controller = 0`. If two processes are running
+# while configured to use the same controller, that controller
+# will control both processes, so if the rover starts driving
+# when you go to move the arm, that's the first thing to check.
 drive_controller = 0
-arm_controller = 0
+arm_controller = 1
 drill_controller = 1
 front_end_loader_controller = 1
 
+# Defines the logging level of each process or python module.
 default_level = logging.DEBUG
 level_map = {
     'Printer': default_level,
@@ -27,6 +39,8 @@ level_map = {
     'JSONDriver': default_level
 }
 
+# A filter string to filter logs by. see the official documentation
+# for the python logging module to see what a valid format is.
 log_filter_string = ''
 
 if not os.path.isdir('./logs'):
@@ -36,6 +50,12 @@ time_string = time.strftime('%d-%b-%Y:%H:%M')
 logfile_path = './logs/{}.log'.format(time_string)
 
 def getLogger():
+    """
+    This uses some python hacks to retrieve the name of the python
+    script that calls getLogger and produces a Logger object with it.
+    For example, if you call getLogger from ArmProcess.py, it will return
+    a Logger object with the name "ArmProcess"
+    """
     frame = inspect.stack()[1]
     name = frame.filename[:-3] # strip off .py extension
     logger = logging.getLogger(name)

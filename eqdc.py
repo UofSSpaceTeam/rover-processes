@@ -1,6 +1,8 @@
 #! /bin/env python
 """
-Equipment Servicing Diagnostic client
+Equipment Servicing Diagnostic client.
+Used for interacting with the Equipment Servicing Diagnostic system
+for the Equipment Servicing task in CIRC 2018.
 """
 
 import argparse

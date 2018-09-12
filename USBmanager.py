@@ -1,3 +1,19 @@
+"""
+USBmanager
+==========
+The USB manager acts as a translation layer between
+USB serial devices and the rest of robocluster.
+There are some hacks to support devices that
+talk VESC or JSON.
+
+The reason for having this manager that everything talks through
+is to decouple the logic of the main processes from the communication
+with embedded devices. The USB manager also handles identities of devices
+as when you plug them in they show up as 'COM1', 'COM2', '/dev/ttyACM0'
+which is undescriptive. Serial devices connected to the USB manager
+must respond to an identity request message (referred to as its "subscription",
+a carry over from Roveberrypy).
+"""
 import time
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
@@ -13,6 +29,12 @@ from JSONdriver import JSONDriver
 import config
 log = config.getLogger()
 
+# USB manager will ignore these devices as they break things
+# or use a different protocol that will be used by a process
+# directly.
+# ttyUSB0 is the Piksi GPS unit.
+# ttyAMA0 is the serial pins on the Raspberry pi.
+# ttyS0 is a virtual serial console on Linux that is always present.
 IGNORE_LIST = ['/dev/ttyS0', '/dev/ttyAMA0', '/dev/ttyUSB0']
 
 
@@ -47,6 +69,12 @@ def dict_to_vesc(d):
 
 
 def handle_vesc_message(vesc_message, path):
+    """
+    Take a VESC message from the usb device and publish it over robocluster.
+    Args:
+        vesc_message: A VESCMessage object from pyvesc.
+        path (str): The path (Posix) or com port (windows) to the serial device.
+    """
     if path in manager.storage.sub_map:
         sub = manager.storage.sub_map[path]
         @manager.task
@@ -56,15 +84,31 @@ def handle_vesc_message(vesc_message, path):
             await manager.publish(sub + '/' + key, msg[key])
 
 def handle_json_message(json_message, path):
+    """
+    Take a JSON message from the usb device and publish it over robocluster.
+    Args:
+        json_message: A python object created from json.load. Assumed to be a dict.
+        path (str): The path (Posix) or com port (windows) to the serial device.
+    """
     if path in manager.storage.sub_map:
         sub = manager.storage.sub_map[path]
         @manager.task
         async def pub_message():
             if type(json_message) == dict:
+                # TODO: support more than just a dict?
                 for key in json_message.keys():
                     await manager.publish(sub+'/'+key, json_message[key])
 
 def init_vesc_driver(port, ser, l):
+    """
+    Create a VESCDriver for the given port. Finishes reading the response to
+    the identity request packet from the device.
+    Args:
+        port (serial.tools.list_ports.ListPortInfo): The serial port to create the driver for.
+        ser: (serial.Serial): The Serial object created for the port
+        l: The first byte of the received VESC packet, determines how many bytes the length
+           field is. http://vedder.se/2015/10/communicating-with-the-vesc-using-uart/
+    """
     to_int = lambda x: int.from_bytes(x, byteorder='big')
     length = ser.read(to_int(l) - 1)
     packet = l + length + ser.read(to_int(length) + 3)
@@ -109,6 +153,14 @@ def init_vesc_driver(port, ser, l):
         return False
 
 def init_json_driver(port, ser, l):
+    """
+    Create a JSONDriver for the given port. Finishes reading the response to
+    the idendity request message.
+    Args:
+        port (serial.tools.list_ports.ListPortInfo): The serial port to create the driver for.
+        ser: (serial.Serial): The Serial object created for the port
+        l (byte): The length of the identity packet.
+    """
     try:
         leng = int.from_bytes(l, byteorder='big')
         packet = ser.read(leng)
@@ -136,6 +188,12 @@ def init_json_driver(port, ser, l):
     return True
 
 def get_subscribers():
+    """
+    Poll each serial device connected to the computer, and
+    initialize the appropriate driver for it.
+    """
+    # TODO: make calls to each device asynchronous so we don't block
+    # trying to read from an unresponsive device on start up.
     PortList = serial.tools.list_ports.comports()
     manager.executor = ThreadPoolExecutor(max_workers=len(PortList))
     for port in PortList:

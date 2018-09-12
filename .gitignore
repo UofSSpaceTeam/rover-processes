@@ -4,3 +4,4 @@ src
 .idea
 *.log
 *.tar.gz
+build
